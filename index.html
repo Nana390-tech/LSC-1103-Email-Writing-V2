@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Send It Right</title>
+<style>
+/* Layout: an email client — folders (CBL phases) on the left, each activity opens like a message. Postage-stamp badges. Theme: moss & berry. */
+:root{
+  --bg:#f4f7ec; --surface:#ffffff; --surface-2:#edf2e2; --ink:#1d2414; --muted:#5b6750; --line:#d9e2c9;
+  --moss:#4a6b14; --moss-soft:#e3ecce; --on-moss:#ffffff;
+  --berry:#b3175a; --berry-soft:#fbe4ee; --on-berry:#ffffff;
+  --good:#2e7d32; --good-soft:#e2f2df; --bad:#c0392b; --bad-soft:#fbe5e2; --warn:#a86a10;
+  --f-display:"Avenir Next","Segoe UI Variable Display","Segoe UI","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --f-mono:ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;
+  --f-ar:"Noto Naskh Arabic","Geeza Pro","Arabic Typesetting",Tahoma,sans-serif;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#10140b; --surface:#192012; --surface-2:#212a18; --ink:#eef3e3; --muted:#a5b096; --line:#334026;
+  --moss:#a9d660; --moss-soft:#2a3916; --on-moss:#10140b;
+  --berry:#f37ab3; --berry-soft:#3f1729; --on-berry:#10140b;
+  --good:#74d378; --good-soft:#1d3a1e; --bad:#ff8a7a; --bad-soft:#42201b; --warn:#f0b75e;
+  color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#10140b; --surface:#192012; --surface-2:#212a18; --ink:#eef3e3; --muted:#a5b096; --line:#334026;
+  --moss:#a9d660; --moss-soft:#2a3916; --on-moss:#10140b;
+  --berry:#f37ab3; --berry-soft:#3f1729; --on-berry:#10140b;
+  --good:#74d378; --good-soft:#1d3a1e; --bad:#ff8a7a; --bad-soft:#42201b; --warn:#f0b75e;
+  color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;margin:0}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.2;margin:0}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
+.ar{font-family:var(--f-ar);direction:rtl;unicode-bidi:isolate}
+
+/* top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto;min-width:0}
+.brand svg{flex:none}
+.brand b{font-family:var(--f-display);font-size:1.15rem;letter-spacing:.01em}
+.brand small{display:block;color:var(--muted);font-size:.78rem;line-height:1.2}
+.hud{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:5px 12px;font-size:.88rem;font-variant-numeric:tabular-nums;cursor:default}
+.pill strong{color:var(--moss)}
+button.pill{cursor:pointer}
+button.pill:hover{border-color:var(--moss)}
+
+.shell{display:grid;grid-template-columns:230px minmax(0,1fr);gap:24px;max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:20px 40px}
+nav.folders{position:sticky;top:76px;align-self:start;display:flex;flex-direction:column;gap:4px}
+.folders .lab{font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);padding:4px 12px 6px}
+.folder{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:transparent;border-radius:10px;padding:9px 12px;cursor:pointer;color:var(--ink)}
+.folder:hover{background:var(--surface-2)}
+.folder.on{background:var(--moss-soft);font-weight:600}
+.folder .ico{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);flex:none}
+.folder .ico svg{width:15px;height:15px;stroke:var(--moss);fill:none;stroke-width:2}
+.folder .t{flex:1;min-width:0}
+.folder .t small{display:block;font-weight:400;color:var(--muted);font-size:.76rem;line-height:1.2}
+.folder .dot{width:9px;height:9px;border-radius:50%;background:var(--berry);flex:none}
+.folder .dot.ok{background:var(--good)}
+.folder .dot.none{background:transparent}
+
+main{min-width:0;display:flex;flex-direction:column;gap:22px}
+
+/* message card */
+.msg{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.msg-h{padding:14px 20px;border-bottom:1px solid var(--line);display:grid;gap:2px;background:linear-gradient(var(--surface-2),var(--surface))}
+.msg-h .meta{font-size:.8rem;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
+.msg-h .meta b{color:var(--ink);font-weight:600}
+.msg-h h2{font-size:1.25rem}
+.msg-b{padding:18px 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.eyebrow{font-size:.74rem;text-transform:uppercase;letter-spacing:.14em;color:var(--berry);font-weight:700}
+.lead{font-size:1.05rem;color:var(--muted);max-width:65ch;margin:0}
+p{margin:0;max-width:68ch}
+
+.btn{border:1px solid transparent;border-radius:10px;padding:10px 18px;cursor:pointer;font-weight:600;background:var(--moss);color:var(--on-moss);transition:transform .12s}
+.btn:hover{transform:translateY(-1px)}
+.btn.alt{background:var(--berry);color:var(--on-berry)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--moss)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.fb{border-radius:10px;padding:10px 14px;font-size:.95rem}
+.fb.good{background:var(--good-soft);color:var(--good)}
+.fb.bad{background:var(--bad-soft);color:var(--bad)}
+.fb.info{background:var(--moss-soft);color:var(--ink)}
+.fb b{color:inherit}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+
+/* start */
+.hero{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:26px 22px;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:center}
+.hero h1{font-size:clamp(1.8rem,4vw,2.6rem);letter-spacing:-.01em}
+.hero h1 em{font-style:normal;color:var(--berry)}
+.envelope{width:100%;max-width:300px;justify-self:center}
+.field{display:flex;flex-direction:column;gap:6px;max-width:420px}
+.field label{font-weight:600;font-size:.9rem}
+input[type=text],textarea,select{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;width:100%}
+textarea{min-height:180px;resize:vertical;line-height:1.6}
+.objectives{margin:0;padding-left:1.2em;display:grid;gap:6px}
+.objectives li::marker{color:var(--moss);font-weight:700}
+.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.phase{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface-2)}
+.phase b{display:block;font-family:var(--f-display)}
+.phase span{font-size:.85rem;color:var(--muted)}
+
+/* choice buttons */
+.choices{display:grid;gap:10px}
+.choice{text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 14px;cursor:pointer;color:var(--ink)}
+.choice:hover:not([disabled]){border-color:var(--moss);background:var(--moss-soft)}
+.choice.right{border-color:var(--good);background:var(--good-soft)}
+.choice.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.choice[disabled]{cursor:default}
+.duel{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.subjline{font-family:var(--f-mono);font-size:.92rem}
+.subjline::before{content:"Subject: ";color:var(--muted)}
+
+/* do/don't */
+.sort{display:grid;gap:8px}
+.sort-item{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--surface)}
+.sort-item .s{flex:1;min-width:160px}
+.sort-item.right{border-color:var(--good);background:var(--good-soft)}
+.sort-item.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.tag{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 14px;cursor:pointer;font-weight:600;font-size:.88rem}
+.tag.do:hover{border-color:var(--good);color:var(--good)}
+.tag.dont:hover{border-color:var(--bad);color:var(--bad)}
+.tally{font-variant-numeric:tabular-nums}
+
+/* email mock */
+.mail{border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.mail-bar{display:flex;gap:6px;padding:8px 12px;background:var(--surface-2);border-bottom:1px solid var(--line);align-items:center}
+.mail-bar i{width:10px;height:10px;border-radius:50%;background:var(--line);display:block}
+.mail-bar span{margin-left:8px;font-size:.8rem;color:var(--muted)}
+.mail-body{padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.part{display:block;width:100%;text-align:left;border:1.5px dashed transparent;background:transparent;border-radius:8px;padding:6px 8px;cursor:pointer;color:var(--ink);line-height:1.55}
+.part:hover{border-color:var(--moss);background:var(--moss-soft)}
+.part.seen{border-color:var(--line)}
+.part.active{border-style:solid;border-color:var(--berry);background:var(--berry-soft)}
+.part .pl{display:inline-block;font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;font-weight:700;color:var(--berry);margin-right:6px;vertical-align:1px}
+.part.hdr{font-size:.92rem}
+.part.hdr .k{color:var(--muted)}
+.explain-box{border-left:4px solid var(--berry);background:var(--berry-soft);border-radius:0 10px 10px 0;padding:12px 14px}
+.explain-box h3{font-size:1rem;margin-bottom:4px}
+.two{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+
+/* order */
+.chips{display:flex;flex-direction:column;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px;text-align:left;cursor:pointer;color:var(--ink)}
+.chip:hover{border-color:var(--moss)}
+.chip.right{border-color:var(--good);background:var(--good-soft)}
+.chip.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.slot-list{border:2px dashed var(--line);border-radius:10px;padding:10px;min-height:120px;display:flex;flex-direction:column;gap:8px}
+.slot-list .chip .n{font-variant-numeric:tabular-nums;color:var(--berry);font-weight:700;margin-right:8px}
+.colhead{font-size:.8rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700;margin-bottom:6px}
+
+/* compare */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.compare .mail-body{font-size:.9rem}
+.pickab{display:flex;gap:10px}
+
+/* flip cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.card{perspective:900px;height:210px;cursor:pointer;border:0;background:transparent;padding:0;text-align:left}
+.card-in{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+.card.flip .card-in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;border:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:6px}
+.front{background:var(--surface);justify-content:center;align-items:center;text-align:center}
+.front .w{font-family:var(--f-display);font-size:1.35rem;font-weight:700}
+.front .pos{color:var(--muted);font-size:.85rem}
+.front .seen-mark{position:absolute;top:10px;right:12px;font-size:.7rem;color:var(--good);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.back{background:var(--moss-soft);transform:rotateY(180deg);font-size:.9rem;overflow:auto}
+.back .ar{font-size:1.2rem;color:var(--berry);font-weight:700}
+.back .ex{font-style:italic}
+.back .ex b{font-style:normal;color:var(--moss)}
+.speak{position:absolute;bottom:10px;right:10px;border:1px solid var(--line);background:var(--surface-2);border-radius:999px;width:32px;height:32px;display:grid;place-items:center;cursor:pointer}
+.speak svg{width:15px;height:15px;stroke:var(--ink);fill:none;stroke-width:2}
+.progress{height:8px;background:var(--surface-2);border-radius:999px;overflow:hidden;border:1px solid var(--line)}
+.progress i{display:block;height:100%;background:var(--moss);transition:width .3s}
+
+/* phrase bank */
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;cursor:pointer;font-size:.9rem}
+.tab.on{background:var(--moss);color:var(--on-moss);border-color:var(--moss)}
+.phr{display:grid;gap:8px}
+.phr li{list-style:none;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}
+.phr ul{margin:0;padding:0;display:grid;gap:8px}
+.phr .use{font-size:.82rem;color:var(--muted)}
+
+/* match */
+.match{display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr);gap:12px}
+.mbtn{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px;cursor:pointer;text-align:left;color:var(--ink);width:100%}
+.mbtn.sel{border-color:var(--berry);background:var(--berry-soft)}
+.mbtn.done{border-color:var(--good);background:var(--good-soft);cursor:default}
+.mbtn.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.mcol{display:flex;flex-direction:column;gap:8px}
+
+/* gap fill */
+.bank{display:flex;flex-wrap:wrap;gap:8px}
+.wchip{border:1.5px solid var(--moss);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 14px;cursor:pointer;font-weight:600}
+.wchip.sel{background:var(--moss);color:var(--on-moss)}
+.wchip.used{opacity:.3;cursor:default}
+.gaptext{line-height:2.2;background:var(--surface-2);border-radius:10px;padding:16px;border:1px solid var(--line)}
+.gap{display:inline-block;min-width:110px;border:0;border-bottom:2px solid var(--berry);background:var(--surface);border-radius:6px 6px 0 0;padding:0 8px;margin:0 2px;cursor:pointer;font-weight:600;color:var(--moss);line-height:1.6}
+.gap.right{border-color:var(--good);background:var(--good-soft)}
+.gap.wrong{border-color:var(--bad);background:var(--bad-soft);color:var(--bad)}
+
+/* upgrade */
+.upg .inf{font-family:var(--f-mono);font-size:.95rem;background:var(--bad-soft);border-radius:8px;padding:10px 12px;color:var(--ink)}
+.upg .inf::before{content:"Informal  ";font-family:var(--f-body);font-size:.7rem;font-weight:700;letter-spacing:.1em;color:var(--bad)}
+.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:.88rem}
+
+/* error detective */
+.line{display:block;width:100%;text-align:left;border:1.5px solid transparent;background:transparent;border-radius:8px;padding:7px 10px;cursor:pointer;color:var(--ink);font-family:var(--f-mono);font-size:.92rem}
+.line:hover{background:var(--surface-2)}
+.line.flag{border-color:var(--berry);background:var(--berry-soft)}
+.line.hit{border-color:var(--good);background:var(--good-soft)}
+.line.miss{border-color:var(--warn);border-style:dashed}
+.line.false{border-color:var(--bad);background:var(--bad-soft)}
+.line .why{display:block;font-family:var(--f-body);font-size:.85rem;color:var(--muted);margin-top:4px}
+
+/* builder */
+.scen{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.scen button{text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:12px;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;gap:4px}
+.scen button:hover{border-color:var(--moss)}
+.scen button.on{border-color:var(--berry);background:var(--berry-soft)}
+.scen button small{color:var(--muted)}
+.scen .done-tag{font-size:.7rem;font-weight:700;color:var(--good);text-transform:uppercase;letter-spacing:.08em}
+.task{border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:12px 14px}
+.task b{font-family:var(--f-display)}
+.compose{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.crow{display:grid;grid-template-columns:90px minmax(0,1fr);align-items:center;border-bottom:1px solid var(--line)}
+.crow > span{padding:8px 12px;color:var(--muted);font-size:.85rem}
+.crow select,.crow input{border:0;border-radius:0;background:transparent}
+.cbody{padding:12px;display:flex;flex-direction:column;gap:10px}
+.cbody textarea{border-style:dashed}
+.phrasechips{display:flex;flex-wrap:wrap;gap:6px}
+.pchip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:4px 10px;font-size:.82rem;cursor:pointer;color:var(--ink)}
+.pchip:hover{border-color:var(--moss)}
+.pchip.vocab{border-color:var(--berry);color:var(--berry)}
+.pchip.vocab.used{background:var(--berry);color:var(--on-berry)}
+.checks{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.checks li{display:flex;gap:10px;align-items:flex-start;font-size:.92rem}
+.checks .m{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:.75rem;font-weight:800;margin-top:1px}
+.checks .ok .m{background:var(--good);color:var(--surface)}
+.checks .no .m{background:var(--bad-soft);color:var(--bad);border:1px solid var(--bad)}
+.checks .tip{display:block;color:var(--muted);font-size:.82rem}
+.wc{font-variant-numeric:tabular-nums;font-size:.85rem;color:var(--muted)}
+.preview{white-space:pre-wrap;font-size:.95rem}
+.scorebig{font-family:var(--f-display);font-size:2.2rem;font-weight:800;color:var(--moss);font-variant-numeric:tabular-nums}
+
+/* quiz */
+.qwrap{display:flex;flex-direction:column;gap:14px}
+.qtop{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.qtext{font-size:1.1rem;font-weight:600;max-width:65ch}
+.result{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 0}
+.ring{width:140px;height:140px}
+
+/* stamps */
+.stamps{display:flex;flex-wrap:wrap;gap:14px}
+.stamp{width:104px;padding:8px;background:var(--surface);position:relative;text-align:center;
+  -webkit-mask:radial-gradient(circle 5px at 5px 5px,transparent 98%,#000) -5px -5px/12px 12px;
+          mask:radial-gradient(circle 5px at 5px 5px,transparent 98%,#000) -5px -5px/12px 12px;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.15))}
+.stamp .inner{border:1.5px solid var(--moss);border-radius:4px;padding:10px 4px;min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:var(--moss-soft)}
+.stamp svg{width:30px;height:30px;stroke:var(--moss);fill:none;stroke-width:1.8}
+.stamp b{font-size:.72rem;line-height:1.15;font-family:var(--f-display)}
+.stamp.locked{opacity:.35;filter:grayscale(1)}
+.stamp.locked .inner{border-style:dashed}
+
+/* glossary */
+.gtable{width:100%;border-collapse:collapse;font-size:.94rem}
+.gtable th{text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:8px;border-bottom:2px solid var(--line)}
+.gtable td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.gtable td.ar{font-size:1.1rem;color:var(--berry);text-align:right}
+.gtable .w{font-weight:700;font-family:var(--f-display)}
+.scroll{overflow-x:auto}
+
+/* certificate */
+.cert{border:3px double var(--moss);border-radius:14px;padding:30px 24px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;background:
+  repeating-linear-gradient(45deg,var(--berry) 0 10px,transparent 10px 20px,var(--moss) 20px 30px,transparent 30px 40px) top/100% 6px no-repeat,var(--surface)}
+.cert h2{font-size:1.9rem;color:var(--moss)}
+.cert .nm{font-family:var(--f-display);font-size:2rem;font-weight:800;color:var(--berry);border-bottom:2px solid var(--line);padding:0 20px 4px}
+.reflect{display:grid;gap:12px}
+.scale{display:flex;gap:8px;flex-wrap:wrap}
+.scale button{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;font-weight:700}
+.scale button.on{background:var(--berry);color:var(--on-berry);border-color:var(--berry)}
+
+footer{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:0 30px;color:var(--muted);font-size:.85rem;text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;z-index:60;font-size:.92rem;max-width:calc(100% - 32px);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.modal{position:fixed;inset:0;background:rgba(10,14,6,.5);display:grid;place-items:center;z-index:50;padding:16px}
+.modal .box{background:var(--surface);border-radius:14px;padding:20px;max-width:560px;width:100%;display:flex;flex-direction:column;gap:14px;max-height:85vh;overflow:auto}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:70}
+
+@media (max-width:860px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  nav.folders{position:static;flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:4px}
+  .folders .lab{display:none}
+  .folder{width:auto;flex:none;padding:8px 10px}
+  .folder .t small{display:none}
+  .hero,.two,.match{grid-template-columns:minmax(0,1fr)}
+  .envelope{max-width:200px}
+}
+@media (max-width:560px){
+  .duel,.compare{grid-template-columns:minmax(0,1fr)}
+  .crow{grid-template-columns:70px minmax(0,1fr)}
+  .brand small{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---- readability: larger type, more space ---- */
+body{font-size:17.5px;line-height:1.65}
+.top{padding:12px 20px}
+.brand b{font-size:1.3rem}
+.brand small{font-size:.85rem}
+.pill{font-size:.95rem;padding:7px 15px}
+.shell{gap:32px;padding-block:28px 48px}
+main{gap:26px}
+.folder{padding:11px 12px;font-size:1.02rem}
+.folder .t small{font-size:.84rem}
+.msg{border-radius:16px}
+.msg-h{padding:18px 26px}
+.msg-h .meta{font-size:.88rem}
+.msg-h h2{font-size:1.55rem}
+.msg-b{padding:24px 26px;gap:20px}
+.lead{font-size:1.12rem;color:var(--ink);opacity:.82}
+.eyebrow{font-size:.82rem}
+.btn{padding:13px 24px;font-size:1.02rem;border-radius:12px}
+.choice,.chip,.mbtn{padding:14px 16px;font-size:1.03rem;border-radius:12px}
+.choices,.chips,.mcol,.sort{gap:12px}
+.sort-item{padding:12px 14px}
+.tag{padding:7px 18px;font-size:.98rem}
+.small,.count,.wc{font-size:.95rem}
+.colhead{font-size:.88rem}
+.checks{gap:10px}
+.checks li{font-size:1.02rem}
+.checks .tip{font-size:.93rem}
+.phase span{font-size:.95rem}
+.phase{padding:14px}
+.card{height:240px}
+.front .w{font-size:1.5rem}
+.back{font-size:1rem}
+.subjline,.line,.upg .inf{font-size:1.02rem}
+.pchip{font-size:.95rem;padding:7px 13px}
+.gaptext{line-height:2.5;font-size:1.06rem;padding:20px}
+.part{padding:8px 10px}
+.part.hdr{font-size:1rem}
+.compare .mail-body{font-size:1rem}
+.mail-body{padding:16px 18px;gap:6px}
+.task{padding:16px 18px;font-size:1.05rem}
+textarea,input[type=text],select{font-size:1.02rem;padding:12px 14px}
+.fb{padding:14px 16px;font-size:1rem}
+.explain-box{padding:16px 18px}
+.explain-box p.small{font-size:1rem}
+.phr .use{font-size:.95rem}
+.designer{text-align:center;color:var(--muted);font-size:.95rem;padding-block:10px 0;margin:0 auto}
+@media (max-width:560px){body{font-size:16.5px}.msg-b{padding:18px 18px}.msg-h{padding:14px 18px}.msg-h h2{font-size:1.3rem}}
+
+/* one activity at a time */
+.stepper{display:flex;gap:10px;flex-wrap:wrap}
+.step{flex:1 1 170px;display:flex;align-items:center;gap:10px;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:10px 14px;cursor:pointer;color:var(--ink);font-size:.98rem;min-width:0}
+.step:hover{border-color:var(--moss)}
+.step .num{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font-weight:700;font-variant-numeric:tabular-nums}
+.step.on{border-color:var(--berry);background:var(--berry-soft);font-weight:600}
+.step.on .num{background:var(--berry);color:var(--on-berry)}
+.step span:last-child{min-width:0;overflow-wrap:anywhere;line-height:1.3}
+.stepnav{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:18px;margin-top:4px}
+
+/* final writing */
+.include{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.include label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:.94rem}
+.include input{margin-top:4px;accent-color:var(--moss);width:18px;height:18px;flex:none}
+.level{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.08em;border:1px solid var(--berry);color:var(--berry);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:2px}
+.sample{border:1.5px solid var(--moss);border-radius:12px;overflow:hidden}
+.sample .sh{background:var(--moss);color:var(--on-moss);padding:8px 14px;font-weight:700;font-size:.9rem}
+.sample .sb{padding:14px 16px;white-space:pre-wrap;line-height:1.6}
+.sample .sb b{color:var(--berry)}
+.designer{font-size:.9rem;color:var(--muted)}
+.designer b{color:var(--ink)}
+
+/* portfolio report */
+.report{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px 22px;display:flex;flex-direction:column;gap:18px}
+.rep-head{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:3px solid var(--moss);padding-bottom:12px}
+.rep-head h2{font-size:1.5rem}
+.rep-meta{display:grid;grid-template-columns:auto auto;gap:2px 14px;font-size:.9rem;align-content:start}
+.rep-meta dt{color:var(--muted)}
+.rep-meta dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums}
+.rep-sec h3{font-size:1.1rem;color:var(--moss);border-bottom:1px solid var(--line);padding-bottom:4px;margin-bottom:10px}
+.rep-item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:12px;break-inside:avoid}
+.rep-item h4{margin:0 0 4px;font-family:var(--f-display);font-size:1rem;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.rep-email{white-space:pre-wrap;font-size:.92rem;background:var(--surface-2);border-radius:8px;padding:10px 12px;margin:8px 0;line-height:1.55}
+.rep-checks{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.8rem;color:var(--muted)}
+.rep-checks .y{color:var(--good)}
+.rep-checks .n{color:var(--bad)}
+.qtable{width:100%;border-collapse:collapse;font-size:.86rem}
+.qtable td,.qtable th{border-bottom:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
+.qtable th{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.empty{color:var(--muted);font-style:italic;font-size:.92rem}
+
+@media print{
+  :root:root:root{--bg:#fff;--surface:#fff;--surface-2:#f2f5ea;--ink:#1d2414;--muted:#55604b;--line:#cfd9bd;--moss:#4a6b14;--moss-soft:#e3ecce;--on-moss:#fff;--berry:#b3175a;--berry-soft:#fbe4ee;--on-berry:#fff;--good:#2e7d32;--good-soft:#e2f2df;--bad:#c0392b;--bad-soft:#fbe5e2;color-scheme:light}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .top,nav.folders,footer,.noprint,#confetti,.toast{display:none!important}
+  .shell{display:block;padding:0}
+  body{background:#fff}
+  body.printing main > *:not(.print-target){display:none!important}
+  .report{border:0;padding:0}
+  .page-break{break-before:page}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><rect x="2" y="7" width="32" height="22" rx="4" fill="var(--moss)"/><path d="M3 9l15 11L33 9" stroke="var(--on-moss)" stroke-width="2.4" fill="none"/><circle cx="29" cy="9" r="6" fill="var(--berry)"/><path d="M26.5 9l1.8 1.8 3.2-3.4" stroke="var(--on-berry)" stroke-width="1.8" fill="none"/></svg>
+    <div><b>Send It Right</b><small>Professional Emails · LSC 1103</small></div>
+  </div>
+  <div class="hud">
+    <span class="pill" title="Your points">Points <strong id="hudPts">0</strong></span>
+    <button class="pill" id="hudBadges" title="See your badges">Badges <strong id="hudBdg">0/7</strong></button>
+    <button class="pill" id="saveBtn" title="Download your progress as a file">Save progress</button>
+    <button class="pill" id="loadBtn" title="Open a saved progress file">Load</button>
+    <input type="file" id="loadFile" accept=".json,application/json" hidden>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="folders" id="folders" aria-label="Lesson folders"></nav>
+  <main id="main"></main>
+</div>
+<canvas id="confetti"></canvas>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- data ---------- */
+const VOCAB=[
+ {w:"acknowledge",pos:"verb",ar:"يُقِرّ / يَعترف بـ",def:"to accept or confirm that you received or know something",ex:"Please acknowledge the receipt of this email.",re:/acknowledg/i},
+ {w:"alternatively",pos:"adverb",ar:"بدلاً من ذلك / كخيار آخر",def:"used to give another choice or option",ex:"Our meeting is on Tuesday at 10 AM; alternatively, we can meet on Wednesday at 2 PM.",re:/alternativ/i},
+ {w:"apologize / apology",pos:"verb / noun",ar:"يعتذر / اعتذار",def:"to say you are sorry about something",ex:"I apologize for not attending the meeting yesterday.",re:/apolog/i},
+ {w:"appreciate",pos:"verb",ar:"يُقدّر",def:"to be thankful for something",ex:"I would appreciate your prompt reply.",re:/appreciat/i},
+ {w:"attachment",pos:"noun",ar:"مرفق",def:"a file or document sent with an email",ex:"Please find a copy of the report as an attachment.",re:/attach/i},
+ {w:"available / availability",pos:"adjective / noun",ar:"متاح / التوفّر",def:"free; having time to do something",ex:"I am available any time after 4 PM on weekdays.",re:/availab/i},
+ {w:"clarify",pos:"verb",ar:"يوضّح",def:"to make something clear",ex:"Could you please clarify the deadline for the project?",re:/clarif/i},
+ {w:"confirm",pos:"verb",ar:"يؤكد",def:"to say that something is true or will happen",ex:"Please confirm your attendance at the meeting.",re:/confirm/i},
+ {w:"consider",pos:"verb",ar:"يفكر في / يأخذ بعين الاعتبار",def:"to think carefully about something",ex:"We need to consider all options before making a decision.",re:/consider/i},
+ {w:"document",pos:"noun / verb",ar:"مستند / وثيقة · يوثّق",def:"a file with information; to record information",ex:"I will send you all the documents by next week.",re:/document/i},
+ {w:"inconvenience",pos:"noun",ar:"إزعاج / مضايقة",def:"trouble or difficulty caused to someone",ex:"I apologize for any inconvenience this delay may have caused.",re:/inconvenien/i},
+ {w:"indicate",pos:"verb",ar:"يشير إلى / يدل على",def:"to point out or show",ex:"Please indicate your preference on the form.",re:/indicat/i},
+ {w:"issue",pos:"noun",ar:"مشكلة / قضية",def:"a matter or a problem",ex:"We will discuss this issue in our next meeting.",re:/\bissue/i},
+ {w:"prompt",pos:"adjective",ar:"سريع / فوري",def:"quick; without delay",ex:"Thank you for your prompt reply to my message.",re:/\bprompt/i},
+ {w:"regarding",pos:"preposition",ar:"بخصوص / فيما يتعلق بـ",def:"about; concerning",ex:"I am writing to you regarding your application for the job.",re:/regarding/i},
+ {w:"reminder",pos:"noun",ar:"تذكير",def:"something that helps you remember",ex:"This is a reminder about tomorrow's meeting.",re:/remind/i},
+ {w:"reschedule",pos:"verb",ar:"يُعيد جدولة",def:"to change the time of a planned event",ex:"Due to some issues, we need to reschedule the meeting.",re:/reschedul/i},
+ {w:"urgent",pos:"adjective",ar:"عاجل",def:"needing attention immediately",ex:"Please treat this matter as urgent.",re:/urgen/i},
+ {w:"update",pos:"noun / verb",ar:"تحديث · يُحدّث",def:"new information; to give someone new information",ex:"Please provide an update on the project's progress by tomorrow.",re:/updat/i}
+];
+VOCAB.forEach(v=>{v.key=v.w.split(" ")[0]});
+
+const PHRASES={
+ "Subject line":{use:"Short and clear. Say what the email is about.",list:["Request to reschedule Thursday's meeting","Absence from LSC 1103 class – 12 October","Extension request – LSC 1103 report","Enquiry regarding summer internship applications"]},
+ "Greeting":{use:"Dear + title + family name. Use a comma.",list:["Dear Mr. Smith,","Dear Ms. Al Mansoori,","Dear Dr. Khalid,","Dear Sir or Madam, (when you don't know the name)"]},
+ "Opening":{use:"A polite first line, then the reason you are writing.",list:["I hope you are doing well.","I am writing regarding …","I am writing to ask about …","Thank you for your email about …"]},
+ "Request":{use:"Ask politely. Never give orders.",list:["Could you please …?","I would appreciate it if you could …","Would it be possible to …?","Please let me know if …"]},
+ "Attachment":{use:"Tell the reader about any file you send.",list:["Please find attached …","I have attached a copy of …","The attachment includes …"]},
+ "Apology":{use:"Say sorry in a professional way.",list:["I apologize for any inconvenience.","Please accept my apology for …","I apologize for the late reply."]},
+ "Closing line":{use:"A polite last line before the sign-off.",list:["Thank you for your understanding.","I look forward to hearing from you.","Please let me know if you need any further information.","Thank you for your time."]},
+ "Sign-off":{use:"Then a new line with your full name.",list:["Best regards,","Kind regards,","Sincerely,"]}
+};
+
+const ANATOMY=[
+ {id:"to",label:"To",html:'<span class="k">To:</span> m.smith@globaltech.ae',hdr:true,info:"The email address of the person you are writing to. Check it carefully before you send. Use CC to send a copy to another person."},
+ {id:"subject",label:"Subject",html:'<span class="k">Subject:</span> Request to reschedule Thursday\'s meeting',hdr:true,info:"A short, clear title. The reader should know what the email is about before opening it. Never leave it empty."},
+ {id:"greeting",label:"Greeting",html:"Dear Mr. Smith,",info:"Start with <b>Dear</b> + title (Mr., Ms., Dr.) + family name, then a comma. Avoid <i>Hi</i>, <i>Hey</i> or <i>Yo</i> in formal emails."},
+ {id:"opening",label:"Opening",html:"I hope you are doing well. I am writing to acknowledge the meeting scheduled for this Thursday.",info:"A polite first sentence and the <b>reason</b> for writing. Useful: <i>I am writing regarding …</i>"},
+ {id:"body",label:"Body",html:"However, due to an urgent matter, I would like to kindly request that we reschedule the meeting for Friday morning instead. Additionally, I have attached a document that provides the latest update on the project's progress.",info:"The main information. Keep it short and clear: what happened, what you need, and any details (dates, times, attachments). Use short paragraphs."},
+ {id:"closing",label:"Closing line",html:"I apologize for any inconvenience and would appreciate your prompt response. Thank you for your understanding.",info:"A polite final sentence: an apology, a thank-you, or <i>I look forward to hearing from you.</i>"},
+ {id:"signoff",label:"Sign-off",html:"Best regards,",info:"A formal goodbye followed by a comma: <i>Best regards, Kind regards, Sincerely.</i> Never <i>Bye</i> or <i>Thx</i>."},
+ {id:"signature",label:"Signature",html:"Mona Mohamed<br>Assistant Manager",info:"Your full name, and your job title (or your course and student ID if you are a student)."}
+];
+
+const ORDER=[
+ "Subject: Request for a meeting about my report",
+ "Dear Dr. Khalid,",
+ "I hope you are doing well. I am writing regarding my LSC 1103 report.",
+ "I would like to ask for a short meeting to clarify your feedback on my introduction. I am available on Monday or Tuesday after 2 PM.",
+ "Thank you for your time. I look forward to hearing from you.",
+ "Kind regards,",
+ "Shamma Al Dhaheri, Student ID: H00123456"
+];
+const ORDER_LABELS=["Subject","Greeting","Opening","Body","Closing line","Sign-off","Signature"];
+
+const DUELS=[
+ {q:"You have a question about the deadline for Assignment 2.",opts:["hi","Question about Assignment 2 deadline"],c:1,why:"A clear subject line tells the reader exactly what the email is about."},
+ {q:"The meeting room has changed and people need to know today.",opts:["URGENT!!! READ NOW!!!","Urgent: room change for today's meeting"],c:1,why:"Capital letters and !!! look like shouting. Say what is urgent, calmly."},
+ {q:"You missed class and want to tell your instructor.",opts:["Absence from LSC 1103 class – 12 October","absent sorry"],c:0,why:"Include the course and the date so your instructor can find it later."}
+];
+
+const DODONT=[
+ {s:"Use a clear subject line",a:"do"},
+ {s:"Use emojis to sound friendly",a:"dont"},
+ {s:"Be professional and polite",a:"do"},
+ {s:"Use short forms like u, pls and thx",a:"dont"},
+ {s:"Be concise (short and clear)",a:"do"},
+ {s:"Write everything in one long paragraph",a:"dont"},
+ {s:"WRITE IN ALL CAPS",a:"dont"},
+ {s:"Check spelling before you click Send",a:"do"},
+ {s:"Use contractions such as I'll and can't",a:"dont"},
+ {s:"End with a sign-off and your full name",a:"do"}
+];
+
+const COMPARE={
+ A:{greet:"Dear Mr. Smith,",body:["I hope you're doing well. I am reaching out to acknowledge the meeting planned for this Thursday. However, because of an urgent situation that has come up, I would like to reschedule the meeting to Friday morning instead.","Also, I have attached a document that includes the most recent update on the project's status. Feel free to review it at your convenience. If anything is unclear, I would be happy to clarify any parts.","I apologize for any inconvenience this change may bring and would appreciate a prompt response to confirm your availability for the new time.","Looking forward to hearing from you."],sign:"Best regards,<br>Mona Mohamed<br>Assistant Manager"},
+ B:{greet:"Hi Mr. Smith,",body:["I hope you're doing fine. I'm reaching out to tell you about the meeting planned for this Thursday. However, because of a very important situation that has come up, I'd like to move the meeting to Friday morning instead. Also, I've attached a file that includes the most recent news on the project's status. Feel free to check it whenever you have time. If anything is unclear, I'd be happy to explain any parts.","I say sorry for any trouble this change may bring and would really like a fast reply to confirm your availability for the new time.","I am waiting to hear from you."],sign:"Best,<br>Mona Mohamed<br>Assistant Manager"},
+ reasons:[
+  {t:"It starts with Dear instead of Hi",ok:true},
+  {t:"It uses formal words like reschedule, urgent and clarify",ok:true},
+  {t:"It uses I apologize for any inconvenience instead of I say sorry",ok:true},
+  {t:"It has short paragraphs that are easy to read",ok:true},
+  {t:"It uses more contractions like I'd and I've",ok:false},
+  {t:"It is friendlier because it sounds like a text message",ok:false}
+ ]
+};
+
+const GAP={
+ words:["regarding","urgent","reschedule","Alternatively","attachment","confirm","apologize","inconvenience","prompt"],
+ parts:["Dear Ms. Motahari,\n\nI hope you are doing well. I am writing ","0"," the group presentation. Unfortunately, I have an ","1"," family matter on Thursday, so I would like to ","2"," my part to Monday. ","3",", I can present on Tuesday morning.\n\nI have sent my slides as an ","4",". Could you please ","5"," if this is possible? I ","6"," for any ","7"," and would appreciate your ","8"," reply.\n\nBest regards,\nHamdan Al Ketbi\nLSC 1103, Section 2"]
+};
+
+const UPGRADE=[
+ {inf:"Hi Mr. Smith,",ok:"Dear Mr. Smith,",bad:["Hey Mr. Smith!","Yo, Mr. Smith,"]},
+ {inf:"I'm reaching out to tell you about the meeting.",ok:"I am writing regarding the meeting.",bad:["I wanna talk to u about the meeting.","This msg is about the meeting, ok?"]},
+ {inf:"because of a very important situation",ok:"due to an urgent matter",bad:["coz of a super big thing","because of a really bad stuff"]},
+ {inf:"I'd like to move the meeting to Friday.",ok:"I would like to reschedule to Friday.",bad:["Can we just do the meeting Friday?","Let's just move the meeting thing to Friday, ok?"]},
+ {inf:"I've attached a file with the latest news.",ok:"I have attached a document with the latest update.",bad:["I put a file in here with all the latest news stuff.","Look, there is a file with the newest info in it."]},
+ {inf:"Feel free to check it whenever you have time.",ok:"Please review it at your convenience.",bad:["Just look at it when u are free, no stress.","Check it out whenever, I don't really mind."]},
+ {inf:"If anything is unclear, I'd be happy to explain.",ok:"If anything is unclear, I would be happy to clarify.",bad:["If u don't get it, I can tell u again, no problem.","If it's confusing, just ask me and I'll explain it."]},
+ {inf:"I say sorry for any trouble.",ok:"I apologize for any inconvenience.",bad:["Sorry sorry for all the trouble!!","So sorry about the whole trouble thing."]},
+ {inf:"I would really like a fast reply.",ok:"I would appreciate a prompt reply.",bad:["Pls reply to me super fast, ok?","Please answer me really fast, thanks."]},
+ {inf:"I am waiting to hear from you.",ok:"I look forward to hearing from you.",bad:["I'm still waiting for ur answer.","Still waiting for you to answer me, ok?"]},
+ {inf:"Best,",ok:"Best regards,",bad:["Talk soon, bye!","Laters, my friend,"]}
+];
+
+const DETECT=[
+ {t:"Subject: (no subject)",err:true,why:'Always write a clear subject line, e.g. "Absence from LSC 1103 class – 12 October".'},
+ {t:"hey teacher!! 😊",err:true,why:'Use a formal greeting with the name and no emojis: "Dear Ms. Motahari,"'},
+ {t:"i cant come to class tmrw coz im sick.",err:true,why:'Lowercase "i", missing apostrophes and text-speak (tmrw, coz). Better: "I will not be able to attend class tomorrow because I am unwell."'},
+ {t:"I have attached my medical note for your records.",err:false,why:"Correct: clear and formal."},
+ {t:"PLEASE TELL ME WHAT I MISS ASAP!!!",err:true,why:'All caps looks like shouting, and it sounds like an order. Better: "Could you please let me know what I will miss?"'},
+ {t:"Thank you for your understanding.",err:false,why:"Correct: a polite closing line."},
+ {t:"thx bye",err:true,why:'Too informal. Use a formal sign-off: "Best regards,"'},
+ {t:"Mariam",err:true,why:'Add your full name and your course or student ID: "Mariam Al Shamsi, LSC 1103".'}
+];
+const DETECT_FIX="Subject: Absence from LSC 1103 class – 14 October\n\nDear Ms. Motahari,\n\nI hope you are doing well. I will not be able to attend class tomorrow because I am unwell. I have attached my medical note for your records.\n\nCould you please let me know what I will miss?\n\nThank you for your understanding.\n\nBest regards,\nMariam Al Shamsi\nLSC 1103, Section 2";
+
+const SCENARIOS=[
+ {id:"absent",title:"Absent from class",to:"Ms. Motahari (your LSC 1103 instructor)",task:"You missed today's class because you had a hospital appointment. Tell your instructor, mention the medical note you attached, and ask what work you missed.",subjects:["hi miss","Absence from LSC 1103 class – today","I WAS NOT IN CLASS!!"],cs:1,greetings:["Hey Miss!!","Hi teacher,","Dear Ms. Motahari,"],cg:2,words:["apologize","attachment","regarding","clarify","update"]},
+ {id:"extension",title:"Ask for an extension",to:"Mr. Ahmed (your LSC 1103 instructor)",task:"Your report is due on Thursday, but you have an urgent family matter. Ask for two more days, explain the reason politely, and suggest a new date.",subjects:["need more time","Extension request – LSC 1103 report","URGENT URGENT URGENT"],cs:1,greetings:["Yo Mr. Ahmed,","Dear Mr. Ahmed,","Ahmed,"],cg:1,words:["urgent","consider","alternatively","appreciate","prompt"]},
+ {id:"resched",title:"Reschedule a meeting",to:"Ms. Fatima Al Nuaimi (your internship supervisor)",task:"You have a meeting with your supervisor on Wednesday at 10 AM, but you have an exam at that time. Ask to reschedule, suggest two new times, and apologize for the inconvenience.",subjects:["Request to reschedule Wednesday's meeting","meeting??","Can't come lol"],cs:0,greetings:["Hi Fatima!","Dear Ms. Al Nuaimi,","Hello dear,"],cg:1,words:["reschedule","available","inconvenience","alternatively","confirm"]},
+ {id:"info",title:"Ask for information",to:"HCT Careers Office",task:"You want to apply for a summer internship. Ask the Careers Office about the deadline and which documents you need to send.",subjects:["question","Hello!!! 😊","Enquiry regarding summer internship applications"],cs:2,greetings:["Dear Sir or Madam,","Hey guys,","To whoever reads this,"],cg:0,words:["regarding","document","clarify","indicate","prompt"]},
+ {id:"late",title:"Late submission apology",to:"Dr. Khalid (course coordinator)",task:"You submitted your assignment one day late because your laptop stopped working. Apologize, explain the issue, and confirm that the file is now attached.",subjects:["sorry sorry","Late submission of Assignment 2 – apology","my laptop broke!!!"],cs:1,greetings:["Hiya Doc,","Dear Dr. Khalid,","Khalid,"],cg:1,words:["apologize","issue","attachment","acknowledge","inconvenience"]}
+];
+const CLOSINGS=["Thank you for your understanding.","I look forward to hearing from you.","Please let me know if you need any further information.","Waiting for ur reply!!"];
+const SIGNOFFS=["Best regards,","Kind regards,","Sincerely,","Bye!","Cheers,"];
+const BAD_CLOSING=3, BAD_SIGNOFFS=[3,4];
+
+const QUIZ=[
+ {q:'You want to change a meeting from Monday to Wednesday. "I would like to ___ our meeting to Wednesday."',o:["reschedule","remind","indicate","acknowledge"],why:"Reschedule means to change the time of a planned event."},
+ {q:"You are writing to a manager you have never met. Which greeting is best?",o:["Dear Mr. Al Hosani,","Hey Mr. Al Hosani!","Hi there, boss,","Good morning, buddy,"],why:"Formal emails start with Dear + title + family name."},
+ {q:"You are sending a file with your email. Which sentence is best?",o:["Please find the report attached.","Look at the file I put in it.","I gave u the report, check it.","The report is there somewhere."],why:"Please find … attached is the standard formal phrase."},
+ {q:"You are replying three days late. Choose the most professional sentence.",o:["I apologize for the late reply.","Sorry sorry, I was so busy!!","My bad, I forgot to answer you.","I say sorry for the slow answer."],why:"I apologize for … is formal and polite."},
+ {q:'Your manager answered your email in ten minutes. "Thank you for your ___ reply."',o:["prompt","urgent","regarding","consider"],why:"Prompt means quick, without delay."},
+ {q:"Which subject line is the clearest?",o:["Extension request – LSC 1103 report","Please read this email when you can","Hello teacher, a small question here","IMPORTANT!!! PLEASE OPEN NOW!!!"],why:"A clear subject line says the topic: what you want and which course."},
+ {q:"Which sign-off is suitable for a formal email?",o:["Kind regards,","Cheers, mate!","Catch you later,","Hugs and love,"],why:"Kind regards, Best regards and Sincerely are formal sign-offs."},
+ {q:"Which sentence should you NOT write in a professional email?",o:["PLEASE ANSWER ME TODAY.","Could you reply by today?","I look forward to your reply.","Please reply when convenient."],why:"All capital letters look like shouting."},
+ {q:"In a professional email, what comes straight after the greeting?",o:["The opening line","The sign-off","The signature","The subject line"],why:"Greeting → opening line → body → closing line → sign-off → signature."},
+ {q:'"I cannot meet on Tuesday. ___, I can meet on Thursday at 2 PM."',o:["Alternatively","Unfortunately","Additionally","Regarding"],why:"Alternatively introduces another option."},
+ {q:"Which is the most formal way to ask for help?",o:["Could you please clarify the task?","Explain the instructions again to me now.","What do u mean in the instructions??","I dont get it, help me pls with this."],why:"Could you please … is a polite request, and clarify is a formal verb."},
+ {q:'"Please ___ your attendance at the workshop by Thursday."',o:["confirm","clarify","consider","document"],why:"Confirm means to say that something will happen (you will attend)."}
+];
+
+const BADGES=[
+ {id:"inbox",name:"Inbox Starter",how:"Finish Engage",ic:'<path d="M4 8h24v16H4z"/><path d="M4 8l12 9 12-9"/>'},
+ {id:"architect",name:"Email Architect",how:"Finish Explore",ic:'<path d="M6 26V10l10-6 10 6v16"/><path d="M12 26v-8h8v8"/>'},
+ {id:"collector",name:"Word Collector",how:"Flip all 19 word cards",ic:'<rect x="6" y="5" width="16" height="22" rx="2"/><path d="M10 11h8M10 16h8M10 21h5"/>'},
+ {id:"upgrader",name:"Formal Upgrader",how:"9+ correct in Formal Upgrade",ic:'<path d="M16 26V8"/><path d="M8 15l8-8 8 8"/>'},
+ {id:"detective",name:"Error Detective",how:"Find 5+ errors, max 1 wrong flag",ic:'<circle cx="14" cy="14" r="8"/><path d="M20 20l7 7"/>'},
+ {id:"author",name:"Email Author",how:"Score 10/12 in Email Builder",ic:'<path d="M6 26l4-1 15-15-3-3L7 22z"/><path d="M19 10l3 3"/>'},
+ {id:"ready",name:"Ready to Send",how:"3 final emails scoring 9/12+",ic:'<path d="M4 16l24-11-7 22-5-9z"/><path d="M16 18l12-13"/>'},
+ {id:"pro",name:"Email Pro",how:"80%+ in the final quiz",ic:'<circle cx="16" cy="13" r="8"/><path d="M11 20l-3 8 8-3 8 3-3-8"/>'}
+];
+
+const FINAL=[
+ {id:"teacher",title:"Email your teacher",to:"Ms. Motahari (your LSC 1103 teacher)",level:"B1",
+  situation:"Your group presentation is next Tuesday, but you must travel to Al Ain with your family for a wedding. Write to your teacher.",
+  include:["Say why you are writing","Explain why you cannot come","Ask to present on another day and suggest a day","Offer to send your slides"],
+  sample:"Subject: Request to present on another day – LSC 1103\n\nDear Ms. Motahari,\n\nI hope you are doing well. I am writing regarding our group presentation next Tuesday.\n\nUnfortunately, I will not be able to attend class that day because I must travel to Al Ain with my family for my cousin's wedding. I apologize for any inconvenience this may cause.\n\nWould it be possible to present my part on Thursday instead? Alternatively, I can record my part and send it to you before Tuesday. My slides are ready, and I can send them to you as an attachment today.\n\nThank you for your understanding. I look forward to hearing from you.\n\nKind regards,\nAhmed Al Mazrouei\nLSC 1103, Section 3"},
+ {id:"etisalat",title:"Internet problem – Etisalat",to:"Etisalat (e&) Customer Service",level:"B1",
+  situation:"For five days, your home internet has been very slow and it stops working several times a day. You restarted the router, but it did not help. Write to customer service.",
+  include:["Give your account number","Describe the problem and how long it has continued","Say what you have already tried","Ask for a technician visit and say when you are available"],
+  sample:"Subject: Slow internet connection – Account 8843 2176\n\nDear Sir or Madam,\n\nI am writing to report a problem with my home internet connection. My account number is 8843 2176.\n\nFor the last five days, my internet has been very slow, and it stops working three or four times a day. I have restarted the router many times, but the problem continues. This is a serious issue for me because I need the internet to study and submit my college assignments.\n\nCould you please send a technician to check my connection? I am available every day after 4 PM. I would also appreciate it if you could confirm the appointment by email.\n\nThank you for your help. I look forward to your prompt reply.\n\nBest regards,\nMariam Al Shamsi\nMobile: 050 123 4567"},
+ {id:"store",title:"Wrong item delivered",to:"Customer Service, StyleBox online store",level:"B1",
+  situation:"You ordered black sports shoes in size 42 online (order SB-20914). You received white shoes in size 40. Write to the store.",
+  include:["Give your order number","Explain what you ordered and what you received","Say what you want: an exchange or a refund","Ask how to return the wrong item"],
+  sample:"Subject: Wrong item received – Order SB-20914\n\nDear Customer Service Team,\n\nI am writing regarding my order number SB-20914, which I received yesterday.\n\nI ordered a pair of black sports shoes in size 42. However, the box contained white shoes in size 40. I have attached a photo of the shoes and the delivery note.\n\nI would like to exchange them for the correct shoes. If my size is not available, I would appreciate a full refund. Could you please let me know how I can return the wrong item?\n\nThank you for your help. I look forward to hearing from you soon.\n\nKind regards,\nKhalid Al Hammadi\nMobile: 055 987 6543"},
+ {id:"it",title:"Cannot log in – IT help",to:"HCT IT Service Desk",level:"B1",
+  situation:"Since yesterday you cannot log in to your student email or Blackboard. Your LSC 1103 report is due on Thursday. Write to the IT Service Desk.",
+  include:["Give your student ID","Describe the problem and when it started","Say what you have already tried","Explain why it is urgent and ask for help"],
+  sample:"Subject: Urgent: cannot log in to my student account\n\nDear IT Service Desk Team,\n\nI am writing to ask for help with my student account. My student ID is H00234567.\n\nSince yesterday morning, I have not been able to log in to my student email or Blackboard. Every time I enter my password, I see the message \"Incorrect username or password\". I have already tried to reset my password, but I did not receive the reset email.\n\nThis issue is urgent because I need to submit my LSC 1103 report by Thursday. Could you please check my account and reset my password as soon as possible?\n\nThank you for your help. I look forward to your prompt reply.\n\nKind regards,\nSaif Al Nuaimi\nLSC 1103, Section 1"},
+ {id:"intern",title:"Ask about an internship",to:"HR Department, Al Noor Hotel Abu Dhabi",level:"B1+",
+  situation:"You would like a summer internship at the front desk of a hotel. Write to the HR Department.",
+  include:["Introduce yourself (name, college, programme)","Say why you are writing","Describe one or two of your skills or experiences","Ask about available positions and the documents you need"],
+  sample:"Subject: Enquiry regarding a summer internship – front desk\n\nDear Sir or Madam,\n\nMy name is Hessa Al Ali, and I am a second-year Business student at the Higher Colleges of Technology in Abu Dhabi. I am writing to ask about summer internship opportunities at your hotel.\n\nI am interested in working at the front desk because I enjoy meeting people, and I can speak Arabic and English well. Last year, I volunteered at a sports event, where I welcomed visitors and answered their questions.\n\nCould you please let me know if you have any positions available this summer? I would also appreciate it if you could indicate which documents I need to send. I have attached my CV for your consideration.\n\nThank you for your time. I look forward to hearing from you.\n\nKind regards,\nHessa Al Ali\nMobile: 050 765 4321"},
+ {id:"thanks",title:"Thank your supervisor",to:"Mr. Saeed Al Kaabi (your work placement supervisor)",level:"B1+",
+  situation:"You have just finished a two-week work placement at a bank. Write to your supervisor.",
+  include:["Thank him for his support","Mention two things you learned","Say how this will help you in the future","Politely ask if he can write a short reference letter"],
+  sample:"Subject: Thank you for my work placement\n\nDear Mr. Al Kaabi,\n\nI hope you are well. I am writing to thank you for your support during my two-week work placement at the bank.\n\nI learned a lot from you and your team. In particular, I learned how to deal with customers politely, and I also learned how to update customer records on the system. These skills will help me in my studies and in my future career.\n\nI would also like to ask you a small favour. Would it be possible for you to write a short reference letter for me? It would help me when I apply for jobs next year.\n\nI really appreciate your time and kindness. Thank you again.\n\nBest regards,\nNoura Al Dhaheri\nLSC 1103, Section 2"}
+];
+
+const FOLDERS=[
+ {id:"start",name:"Welcome",sub:"Objectives",ic:'<circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/>'},
+ {id:"engage",name:"Engage",sub:"Inbox warm-up",ic:'<path d="M2 4h12v9H2z"/><path d="M2 4l6 5 6-5"/>'},
+ {id:"explore",name:"Explore",sub:"Parts of an email",ic:'<circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/>'},
+ {id:"explain",name:"Explain",sub:"Words & phrases",ic:'<path d="M2 3h5a2 2 0 012 2v9a2 2 0 00-2-2H2zM14 3H9a2 2 0 00-2 2"/><path d="M14 3v9H9"/>'},
+ {id:"extend",name:"Extend",sub:"Practise & write",ic:'<path d="M3 13l2-.5 8-8-1.5-1.5-8 8z"/>'},
+ {id:"write",name:"Write",sub:"Final email tasks",ic:'<path d="M2 3h12v10H2z"/><path d="M5 7h6M5 10h4"/>'},
+ {id:"evaluate",name:"Evaluate",sub:"Quiz & certificate",ic:'<path d="M3 8l3 3 7-7"/>'},
+ {id:"portfolio",name:"My Portfolio",sub:"Print / save as PDF",ic:'<path d="M4 6V2h8v4"/><rect x="2" y="6" width="12" height="6" rx="1"/><path d="M4 10h8v4H4z"/>'},
+ {id:"glossary",name:"Glossary",sub:"English / عربي",ic:'<path d="M3 2h9v12H3z"/><path d="M6 5h4M6 8h4"/>'}
+];
+
+/* ---------- state ---------- */
+let S=fresh();
+function fresh(){return {app:"Send It Right",version:1,name:"",points:0,badges:[],earned:{},complete:{},flipped:[],builder:{},final:{},quiz:null,reflection:{conf:0,word:"",change:""},started:new Date().toISOString()};}
+let cur="start";
+const view={}; // per-render transient state
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const embedded=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+function toast(t,ms){const d=document.createElement("div");d.className="toast";d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),ms||2600)}
+function earn(key,pts){if(S.earned[key])return false;S.earned[key]=pts;S.points+=pts;hud();return true}
+function badge(id){if(S.badges.includes(id))return;S.badges.push(id);hud();const b=BADGES.find(x=>x.id===id);confetti();toast("New badge: "+b.name+"!",3200)}
+function complete(sec){S.complete[sec]=true;folders()}
+function hud(){$("#hudPts").textContent=S.points;$("#hudBdg").textContent=S.badges.length+"/"+BADGES.length}
+function firstName(){return (S.name||"").trim().split(/\s+/)[0]||"there"}
+function speak(t){try{const u=new SpeechSynthesisUtterance(t.split(" /")[0]);u.lang="en-GB";u.rate=.9;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+function card(meta,title,body,id){return `<section class="msg" ${id?'id="'+id+'"':""}><div class="msg-h"><div class="meta">${meta}</div><h2>${title}</h2></div><div class="msg-b">${body}</div></section>`}
+function meta(phase,n,of){return `<span>${phase} · Activity ${n} of ${of}</span>`}
+
+/* ---------- folders ---------- */
+function folders(){
+ $("#folders").innerHTML='<div class="lab">Folders</div>'+FOLDERS.map(f=>{
+  const st=(f.id==="start"||f.id==="glossary"||f.id==="portfolio")?"none":(S.complete[f.id]?"ok":"");
+  return `<button class="folder ${cur===f.id?"on":""}" data-f="${f.id}" aria-current="${cur===f.id?"page":"false"}"><span class="ico"><svg viewBox="0 0 16 16">${f.ic}</svg></span><span class="t">${f.name}<small>${f.sub}</small></span><span class="dot ${st}" title="${st==="ok"?"Complete":"To do"}"></span></button>`}).join("");
+ $("#folders").querySelectorAll(".folder").forEach(b=>b.onclick=()=>go(b.dataset.f));
+}
+function stepify(m){
+ const cards=[...m.children].filter(c=>c.classList.contains("msg"));if(cards.length<2)return;
+ view.step=view.step||{};const key=cur;
+ const bar=document.createElement("div");bar.className="stepper noprint";bar.setAttribute("role","tablist");
+ bar.innerHTML=cards.map((c,i)=>`<button class="step" role="tab" data-step="${i}"><span class="num">${i+1}</span><span>${esc(c.querySelector("h2").textContent)}</span></button>`).join("");
+ m.insertBefore(bar,cards[0]);
+ cards.forEach((c,i)=>{const nav=document.createElement("div");nav.className="stepnav noprint";
+  nav.innerHTML=(i>0?`<button class="btn ghost" data-step="${i-1}">← Previous</button>`:"<span></span>")+(i<cards.length-1?`<button class="btn" data-step="${i+1}">Next activity →</button>`:"");
+  c.querySelector(".msg-b").appendChild(nav)});
+ const show=(i,scroll)=>{view.step[key]=i;cards.forEach((c,j)=>c.hidden=j!==i);bar.querySelectorAll(".step").forEach((b,j)=>{b.classList.toggle("on",j===i);b.setAttribute("aria-selected",j===i)});if(scroll)window.scrollTo({top:0,behavior:"smooth"})};
+ m.querySelectorAll("[data-step]").forEach(b=>b.addEventListener("click",()=>show(+b.dataset.step,true)));
+ show(Math.min(view.step[key]||0,cards.length-1));
+}
+function go(id){cur=id;folders();const m=$("#main");m.innerHTML="";({start:rStart,engage:rEngage,explore:rExplore,explain:rExplain,extend:rExtend,write:rWrite,evaluate:rEvaluate,portfolio:rPortfolio,glossary:rGlossary}[id])(m);if(["engage","explore","explain","extend","evaluate"].includes(id))stepify(m);window.scrollTo({top:0,behavior:"smooth"})}
+function nextBtn(to,label){return `<div class="row noprint"><button class="btn" data-go="${to}">${label}</button></div>`}
+function bindGo(root){root.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go))}
+
+/* ---------- START ---------- */
+function rStart(m){
+ m.innerHTML=`
+ <section class="hero">
+  <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+   <span class="eyebrow">LSC 1103 · Professional Written Communication</span>
+   <h1>Write emails that get a <em>reply</em>.</h1>
+   <p class="lead">Learn the parts of a professional email, the words that make it formal, and then write your own for real situations at college and work.</p>
+   <div class="field"><label for="studentName">Your full name (for your certificate)</label><input type="text" id="studentName" placeholder="e.g. Shamma Al Dhaheri" value="${esc(S.name)}" autocomplete="name"></div>
+   <div class="row"><button class="btn" id="startGo">Open your Inbox</button><span class="small muted">Already started? Use <b>Load</b> at the top.</span></div>
+  </div>
+  <svg class="envelope" viewBox="0 0 240 180" aria-hidden="true">
+   <rect x="20" y="40" width="200" height="124" rx="10" fill="var(--moss-soft)" stroke="var(--moss)" stroke-width="3"/>
+   <path d="M20 50l100 70 100-70" fill="none" stroke="var(--moss)" stroke-width="3"/>
+   <rect x="44" y="14" width="150" height="80" rx="6" fill="var(--surface)" stroke="var(--line)" stroke-width="2"/>
+   <text x="58" y="38" font-size="12" fill="var(--muted)" font-family="sans-serif">Dear Mr. Smith,</text>
+   <rect x="58" y="48" width="118" height="5" rx="2.5" fill="var(--line)"/><rect x="58" y="60" width="96" height="5" rx="2.5" fill="var(--line)"/><rect x="58" y="72" width="108" height="5" rx="2.5" fill="var(--line)"/>
+   <g transform="translate(176 118)"><circle r="26" fill="var(--berry)"/><text y="-2" text-anchor="middle" font-size="11" font-weight="700" fill="var(--on-berry)" font-family="sans-serif">SEND</text><text y="12" text-anchor="middle" font-size="9" fill="var(--on-berry)" font-family="sans-serif">IT RIGHT</text></g>
+  </svg>
+ </section>
+ ${card('<span><b>Lesson objectives</b></span>','What you will learn',`
+  <p><b>By the end of this lesson, you will be able to:</b></p>
+  <ol class="objectives">
+   <li>identify the eight parts of a professional email and put them in the right order;</li>
+   <li>change informal words and phrases into formal ones;</li>
+   <li>use 19 key email words correctly, with their Arabic meanings;</li>
+   <li>find and fix common mistakes in emails;</li>
+   <li>write complete professional emails to a teacher, a company or customer service.</li>
+  </ol>`)}
+ ${card('<span><b>How it works</b></span>','Six folders, one certificate',`
+  <div class="phases">
+   <div class="phase"><b>1 · Engage</b><span>Subject lines and the Do's and Don'ts</span></div>
+   <div class="phase"><b>2 · Explore</b><span>The parts of an email; formal or informal?</span></div>
+   <div class="phase"><b>3 · Explain</b><span>19 email words and a phrase bank</span></div>
+   <div class="phase"><b>4 · Extend</b><span>Practise, find errors, build an email</span></div>
+   <div class="phase"><b>5 · Write</b><span>Six real email tasks with sample answers</span></div>
+   <div class="phase"><b>6 · Evaluate</b><span>Final quiz and your certificate</span></div>
+  </div>
+  <p class="small muted">To earn your certificate: score 80% or more in the quiz <b>and</b> write at least 2 final emails. Collect points and eight postage-stamp badges as you go. <b>My Portfolio</b> puts all your answers on one page that you can print or save as a PDF. Click <b>Save progress</b> to download a file you can load next class.</p>`)}
+ <p class="designer">Designed by: Nazila Motahari</p>`;
+ const inp=$("#studentName");inp.oninput=()=>{S.name=inp.value};
+ $("#startGo").onclick=()=>{if(!S.name.trim()){inp.focus();toast("Please type your name first.");return}go("engage")};
+}
+
+/* ---------- ENGAGE ---------- */
+function rEngage(m){
+ view.duel=0;view.duelScore=0;view.dd={};
+ m.innerHTML=card(meta("Engage",1,2),"Which email would you open first?",`
+   <p class="lead">Look at each situation. Choose the better subject line.</p><div id="duelBox"></div>`)
+ +card(meta("Engage",2,2),"Do or Don't?",`
+   <p class="lead">You learned these last week. Is each one a <b>Do</b> or a <b>Don't</b> in a professional email?</p>
+   <div class="sort" id="ddBox"></div><div id="ddFb"></div>`)
+ +`<div id="engNext"></div>`;
+ duelRender();ddRender();
+}
+function duelRender(){
+ const box=$("#duelBox");const i=view.duel;
+ if(i>=DUELS.length){box.innerHTML=`<div class="fb good">You chose ${view.duelScore} of ${DUELS.length} correctly. A clear subject line helps your email get read.</div>`;S.complete.engage1=true;engageCheck();return}
+ const d=DUELS[i];
+ box.innerHTML=`<p class="count">Situation ${i+1} of ${DUELS.length}</p><p><b>${esc(d.q)}</b></p>
+  <div class="duel">${d.opts.map((o,k)=>`<button class="choice subjline" data-k="${k}">${esc(o)}</button>`).join("")}</div><div id="duelFb"></div>`;
+ box.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{
+  const k=+b.dataset.k;box.querySelectorAll(".choice").forEach(x=>{x.disabled=true;if(+x.dataset.k===d.c)x.classList.add("right")});
+  if(k===d.c){view.duelScore++;earn("duel"+i,5)}else b.classList.add("wrong");
+  $("#duelFb").innerHTML=`<div class="fb ${k===d.c?"good":"bad"}">${k===d.c?"Correct! ":"Not quite. "}${esc(d.why)}</div><div class="row" style="margin-top:10px"><button class="btn ghost" id="duelNext">${i+1<DUELS.length?"Next situation":"Finish"}</button></div>`;
+  $("#duelNext").onclick=()=>{view.duel++;duelRender()};
+ });
+}
+function ddRender(){
+ const items=view.ddOrder||(view.ddOrder=shuffle(DODONT.map((_,i)=>i)));
+ $("#ddBox").innerHTML=items.map(i=>{const d=DODONT[i];const a=view.dd[i];const cls=a?(a===d.a?"right":"wrong"):"";
+  return `<div class="sort-item ${cls}"><span class="s">${esc(d.s)}</span>${a?`<b class="small" style="color:var(--${a===d.a?"good":"bad"})">${d.a==="do"?"DO":"DON'T"}${a===d.a?"":" — the answer is "+(d.a==="do"?"Do":"Don't")}</b>`:`<button class="tag do" data-i="${i}" data-a="do">Do</button><button class="tag dont" data-i="${i}" data-a="dont">Don't</button>`}</div>`}).join("");
+ $("#ddBox").querySelectorAll(".tag").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;view.dd[i]=b.dataset.a;if(b.dataset.a===DODONT[i].a)earn("dd"+i,3);ddRender()});
+ const n=Object.keys(view.dd).length;
+ if(n===DODONT.length){const ok=DODONT.filter((d,i)=>view.dd[i]===d.a).length;$("#ddFb").innerHTML=`<div class="fb ${ok>=8?"good":"info"}">You sorted <b class="tally">${ok}/${DODONT.length}</b> correctly. ${ok>=8?"Great memory!":"Read the red ones again before you move on."}</div>`;S.complete.engage2=true;engageCheck()}
+}
+function engageCheck(){if(S.complete.engage1&&S.complete.engage2){complete("engage");badge("inbox");$("#engNext").innerHTML=nextBtn("explore","Next folder: Explore");bindGo($("#engNext"))}}
+
+/* ---------- EXPLORE ---------- */
+function rExplore(m){
+ view.seen=new Set();view.ord=[];view.pool=shuffle(ORDER.map((_,i)=>i));view.ab=null;view.reasons=new Set();
+ m.innerHTML=card(meta("Explore",1,3),"The anatomy of an email",`
+   <p class="lead">Click each part of Mona's email to find out what it does. Open all eight parts.</p>
+   <div class="two">
+    <div class="mail"><div class="mail-bar"><i></i><i></i><i></i><span>New message</span></div><div class="mail-body" id="anat">${ANATOMY.map(p=>`<button class="part ${p.hdr?"hdr":""}" data-id="${p.id}"><span class="pl">${p.label}</span>${p.html}</button>`).join("")}</div></div>
+    <div style="display:flex;flex-direction:column;gap:10px;min-width:0"><div class="explain-box" id="anatInfo"><h3>Click a part</h3><p class="small">Start with the To line at the top.</p></div><div class="progress" aria-label="Parts opened"><i id="anatBar" style="width:0%"></i></div><span class="count" id="anatCount">0 of 8 parts opened</span></div>
+   </div>`)
+ +card(meta("Explore",2,3),"Build Shamma's email",`
+   <p class="lead">Shamma's email is mixed up. Tap the pieces in the correct order, from the subject line to the signature.</p>
+   <div class="two">
+    <div><div class="colhead">Pieces</div><div class="chips" id="ordPool"></div></div>
+    <div><div class="colhead">Your email</div><div class="slot-list" id="ordList"></div></div>
+   </div>
+   <div class="row"><button class="btn" id="ordCheck" disabled>Check order</button><button class="btn ghost" id="ordReset">Start again</button></div><div id="ordFb"></div>`)
+ +card(meta("Explore",3,3),"Which one is more formal?",`
+   <p class="lead">Read both emails. Choose the more formal one, then choose <b>why</b>.</p>
+   <div class="compare">${["A","B"].map(k=>{const e=COMPARE[k];return `<div class="mail"><div class="mail-bar"><i></i><i></i><i></i><span>Email ${k}</span></div><div class="mail-body"><p>${e.greet}</p>${e.body.map(p=>`<p>${esc(p)}</p>`).join("")}<p>${e.sign}</p></div></div>`}).join("")}</div>
+   <div class="pickab"><button class="btn ghost" data-ab="A">Email A is more formal</button><button class="btn ghost" data-ab="B">Email B is more formal</button></div>
+   <div id="abFb"></div>`)
+ +`<div id="expNext"></div>`;
+ m.querySelectorAll(".part").forEach(b=>b.onclick=()=>{
+  m.querySelectorAll(".part").forEach(x=>x.classList.remove("active"));b.classList.add("active","seen");
+  const p=ANATOMY.find(x=>x.id===b.dataset.id);view.seen.add(p.id);
+  $("#anatInfo").innerHTML=`<h3>${p.label}</h3><p class="small">${p.info}</p>`;
+  $("#anatBar").style.width=(view.seen.size/8*100)+"%";$("#anatCount").textContent=view.seen.size+" of 8 parts opened";
+  if(view.seen.size===8&&!S.complete.explore1){S.complete.explore1=true;earn("anat",15);toast("All parts opened: +15 points");exploreCheck()}
+ });
+ ordRender();
+ $("#ordReset").onclick=()=>{view.ord=[];view.pool=shuffle(ORDER.map((_,i)=>i));$("#ordFb").innerHTML="";ordRender()};
+ $("#ordCheck").onclick=()=>{
+  const okAll=view.ord.every((v,i)=>v===i);
+  $("#ordList").querySelectorAll(".chip").forEach((c,i)=>c.classList.add(view.ord[i]===i?"right":"wrong"));
+  if(okAll){$("#ordFb").innerHTML=`<div class="fb good">Perfect order! Subject → Greeting → Opening → Body → Closing line → Sign-off → Signature.</div>`;earn("order",20);S.complete.explore2=true;exploreCheck()}
+  else{const n=view.ord.filter((v,i)=>v===i).length;$("#ordFb").innerHTML=`<div class="fb bad">${n} of 7 are in the right place. Tap a red piece to send it back, then try again.</div>`}
+ };
+ m.querySelectorAll("[data-ab]").forEach(b=>b.onclick=()=>abPick(b.dataset.ab));
+}
+function ordRender(){
+ $("#ordPool").innerHTML=view.pool.map(i=>`<button class="chip" data-i="${i}">${esc(ORDER[i])}</button>`).join("")||'<span class="small muted">All pieces placed.</span>';
+ $("#ordList").innerHTML=view.ord.map((i,k)=>`<button class="chip" data-i="${i}"><span class="n">${k+1}</span>${esc(ORDER[i])}</button>`).join("")||'<span class="small muted">Tap a piece on the left to start.</span>';
+ $("#ordPool").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;view.pool=view.pool.filter(x=>x!==i);view.ord.push(i);ordRender()});
+ $("#ordList").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;view.ord=view.ord.filter(x=>x!==i);view.pool.push(i);ordRender()});
+ $("#ordCheck").disabled=view.ord.length!==ORDER.length;
+}
+function abPick(k){
+ document.querySelectorAll("[data-ab]").forEach(b=>{b.disabled=true;b.classList.toggle("alt",b.dataset.ab==="A");b.classList.toggle("ghost",b.dataset.ab!=="A")});
+ const ok=k==="A";if(ok)earn("ab",10);
+ const rs=view.rsOrder||(view.rsOrder=shuffle(COMPARE.reasons.map((_,i)=>i)));
+ $("#abFb").innerHTML=`<div class="fb ${ok?"good":"bad"}">${ok?"Yes, Email A is more formal.":"Look again: Email A is more formal."} Now choose all the reasons that make it formal.</div>
+  <div class="choices" id="rsBox">${rs.map(i=>`<button class="choice" data-r="${i}" aria-pressed="false">${esc(COMPARE.reasons[i].t)}</button>`).join("")}</div>
+  <div class="row"><button class="btn" id="rsCheck">Check reasons</button></div><div id="rsFb"></div>`;
+ $("#rsBox").querySelectorAll(".choice").forEach(b=>b.onclick=()=>{const r=+b.dataset.r;if(view.reasons.has(r))view.reasons.delete(r);else view.reasons.add(r);b.setAttribute("aria-pressed",view.reasons.has(r));b.style.borderColor=view.reasons.has(r)?"var(--berry)":"";b.style.background=view.reasons.has(r)?"var(--berry-soft)":""});
+ $("#rsCheck").onclick=()=>{
+  let right=0,wrong=0;
+  $("#rsBox").querySelectorAll(".choice").forEach(b=>{const r=+b.dataset.r,ok=COMPARE.reasons[r].ok,sel=view.reasons.has(r);b.disabled=true;b.style.borderColor="";b.style.background="";
+   if(ok)b.classList.add("right");if(sel&&!ok){b.classList.add("wrong");wrong++}if(sel&&ok)right++});
+  $("#rsCheck").disabled=true;earn("reasons",right*3);
+  $("#rsFb").innerHTML=`<div class="fb ${wrong===0&&right===4?"good":"info"}">You found ${right} of 4 reasons${wrong?` and chose ${wrong} that are not true`:""}. The green ones are correct. Email A still has one small problem: <b>you're</b> should be <b>you are</b>.</div>`;
+  S.complete.explore3=true;exploreCheck();
+ };
+}
+function exploreCheck(){if(S.complete.explore1&&S.complete.explore2&&S.complete.explore3){complete("explore");badge("architect");$("#expNext").innerHTML=nextBtn("explain","Next folder: Explain");bindGo($("#expNext"))}}
+
+/* ---------- EXPLAIN ---------- */
+function rExplain(m){
+ view.tab=Object.keys(PHRASES)[0];
+ m.innerHTML=card(meta("Explain",1,3),"19 words for professional emails",`
+   <p class="lead">Tap a card to see the Arabic meaning, definition and an example. Tap the speaker to hear the word.</p>
+   <div class="row" style="justify-content:space-between"><span class="count" id="flipCount"></span><div class="progress" style="flex:1;max-width:260px"><i id="flipBar"></i></div></div>
+   <div class="cards" id="cards"></div>`)
+ +card(meta("Explain",2,3),"Phrase bank",`
+   <p class="lead">Ready-made phrases for each part of an email. You will use them in the Email Builder.</p>
+   <div class="tabs" id="ptabs"></div><div class="phr" id="pbox"></div>`)
+ +card(meta("Explain",3,3),"Quick match",`
+   <p class="lead">Tap a word, then tap its meaning.</p>
+   <div class="match"><div class="mcol" id="mW"></div><div class="mcol" id="mD"></div></div>
+   <div id="mFb"></div>`)
+ +`<div id="explNext"></div>`;
+ cardsRender();tabsRender();matchNew();
+}
+function hl(ex,v){return esc(ex).replace(new RegExp("\\b("+v.re.source.replace(/\\b/g,"")+"\\w*)","i"),"<b>$1</b>")}
+function cardsRender(){
+ $("#cards").innerHTML=VOCAB.map((v,i)=>`<div class="card ${view["f"+i]?"flip":""}" data-i="${i}" role="button" tabindex="0" aria-label="${esc(v.w)}"><div class="card-in">
+   <div class="face front">${S.flipped.includes(v.key)?'<span class="seen-mark">Seen</span>':""}<span class="w">${esc(v.w)}</span><span class="pos">${v.pos}</span></div>
+   <div class="face back"><span class="ar">${v.ar}</span><span>${esc(v.def)}</span><span class="ex">${hl(v.ex,v)}</span></div></div>
+   <span class="speak" data-say="${esc(v.w)}" role="button" aria-label="Hear ${esc(v.w)}"><svg viewBox="0 0 16 16"><path d="M2 6h3l4-3v10l-4-3H2z"/><path d="M11 5.5a3.5 3.5 0 010 5"/></svg></span></div>`).join("");
+ const n=S.flipped.length;$("#flipCount").textContent=n+" of "+VOCAB.length+" words opened";$("#flipBar").style.width=(n/VOCAB.length*100)+"%";
+ $("#cards").querySelectorAll(".card").forEach(c=>{
+  const act=e=>{if(e.target.closest(".speak")){speak(e.target.closest(".speak").dataset.say);return}
+   const i=+c.dataset.i;view["f"+i]=!view["f"+i];c.classList.toggle("flip");
+   const k=VOCAB[i].key;if(!S.flipped.includes(k)){S.flipped.push(k);earn("flip"+k,2);
+    const n=S.flipped.length;$("#flipCount").textContent=n+" of "+VOCAB.length+" words opened";$("#flipBar").style.width=(n/VOCAB.length*100)+"%";
+    if(n===VOCAB.length){badge("collector");explainCheck()}}};
+  c.onclick=act;c.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();act(e)}};
+ });
+}
+function tabsRender(){
+ $("#ptabs").innerHTML=Object.keys(PHRASES).map(k=>`<button class="tab ${k===view.tab?"on":""}" data-t="${k}">${k}</button>`).join("");
+ const p=PHRASES[view.tab];$("#pbox").innerHTML=`<p class="use">${esc(p.use)}</p><ul>${p.list.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+ $("#ptabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{view.tab=b.dataset.t;tabsRender()});
+}
+function matchNew(){
+ view.mset=shuffle(VOCAB.map((_,i)=>i)).slice(0,6);view.mdone=new Set();view.msel=null;
+ view.mdefs=shuffle(view.mset);matchRender();$("#mFb").innerHTML="";
+}
+function matchRender(){
+ $("#mW").innerHTML=view.mset.map(i=>`<button class="mbtn ${view.mdone.has(i)?"done":""} ${view.msel===i?"sel":""}" data-w="${i}" ${view.mdone.has(i)?"disabled":""}><b>${esc(VOCAB[i].w)}</b></button>`).join("");
+ $("#mD").innerHTML=view.mdefs.map(i=>`<button class="mbtn ${view.mdone.has(i)?"done":""}" data-d="${i}" ${view.mdone.has(i)?"disabled":""}>${esc(VOCAB[i].def)}</button>`).join("");
+ $("#mW").querySelectorAll(".mbtn").forEach(b=>b.onclick=()=>{view.msel=+b.dataset.w;matchRender()});
+ $("#mD").querySelectorAll(".mbtn").forEach(b=>b.onclick=()=>{
+  if(view.msel===null){toast("Tap a word first.");return}
+  const d=+b.dataset.d;
+  if(d===view.msel){view.mdone.add(d);earn("match"+VOCAB[d].key,2);view.msel=null;matchRender();
+   if(view.mdone.size===6){$("#mFb").innerHTML=`<div class="fb good">All six matched! <button class="btn ghost" id="mAgain" style="margin-left:8px">Try 6 more words</button></div>`;$("#mAgain").onclick=matchNew;S.complete.explain2=true;explainCheck()}}
+  else{b.classList.add("shake");setTimeout(()=>b.classList.remove("shake"),400)}
+ });
+}
+function explainCheck(){if(S.flipped.length===VOCAB.length&&S.complete.explain2&&!$("#explNext").innerHTML){complete("explain");$("#explNext").innerHTML=nextBtn("extend","Next folder: Extend");bindGo($("#explNext"))}}
+
+/* ---------- EXTEND ---------- */
+function rExtend(m){
+ view.gap={};view.gsel=null;view.uq=shuffle(UPGRADE.map((_,i)=>i));view.ui=0;view.uscore=0;view.flags=new Set();view.scen=null;
+ m.innerHTML=card(meta("Extend",1,4),"Complete Hamdan's email",`
+   <p class="lead">Tap a word, then tap the gap where it belongs. Tap a filled gap to remove the word.</p>
+   <div class="bank" id="gBank"></div><div class="gaptext" id="gText"></div>
+   <div class="row"><button class="btn" id="gCheck">Check my answers</button></div><div id="gFb"></div>`)
+ +card(meta("Extend",2,4),"Formal upgrade",`
+   <p class="lead">Each phrase is too informal. Choose the best formal version.</p><div class="upg" id="upBox"></div>`)
+ +card(meta("Extend",3,4),"Error detective",`
+   <p class="lead">Mariam wrote this email to her instructor. Tap every line that has a mistake, then check.</p>
+   <div class="mail"><div class="mail-bar"><i></i><i></i><i></i><span>Draft</span></div><div class="mail-body" id="detBox"></div></div>
+   <div class="row"><button class="btn" id="detCheck">Check</button><span class="count" id="detCount">0 lines flagged</span></div><div id="detFb"></div>`)
+ +card(meta("Extend",4,4),"Email Builder",`
+   <p class="lead">Choose a situation and write your own email. The checklist updates while you type.</p>
+   <div class="scen" id="scenBox"></div><div id="builder"></div>`)
+ +`<div id="extNext"></div>`;
+ gapRender();upRender();detRender();scenRender();
+ $("#gCheck").onclick=gapCheck;$("#detCheck").onclick=detCheck;
+}
+function gapRender(){
+ const used=Object.values(view.gap);
+ const order=view.gw||(view.gw=shuffle(GAP.words.map((_,i)=>i)));
+ $("#gBank").innerHTML=order.map(i=>`<button class="wchip ${used.includes(i)?"used":""} ${view.gsel===i?"sel":""}" data-w="${i}" ${used.includes(i)?"disabled":""}>${GAP.words[i]}</button>`).join("");
+ $("#gText").innerHTML=GAP.parts.map(p=>/^\d$/.test(p)?`<button class="gap" data-g="${p}">${view.gap[p]!==undefined?GAP.words[view.gap[p]]:"&nbsp;"}</button>`:esc(p).replace(/\n/g,"<br>")).join("");
+ $("#gBank").querySelectorAll(".wchip").forEach(b=>b.onclick=()=>{view.gsel=+b.dataset.w;gapRender()});
+ $("#gText").querySelectorAll(".gap").forEach(b=>b.onclick=()=>{const g=b.dataset.g;
+  if(view.gap[g]!==undefined&&view.gsel===null){delete view.gap[g]}else if(view.gsel!==null){view.gap[g]=view.gsel;view.gsel=null}else{toast("Tap a word first.")}
+  $("#gFb").innerHTML="";gapRender()});
+}
+function gapCheck(){
+ let ok=0;$("#gText").querySelectorAll(".gap").forEach(b=>{const g=+b.dataset.g;const r=view.gap[g]===g;if(r)ok++;b.classList.add(r?"right":"wrong");if(r)earn("gap"+g,4)});
+ $("#gFb").innerHTML=`<div class="fb ${ok===9?"good":"info"}"><b class="tally">${ok}/9</b> correct. ${ok===9?"Excellent! Every word is in the right place.":"Tap the red gaps to remove the words and try again."}</div>`;
+ if(ok===9){S.complete.ext1=true;extendCheck()}
+}
+function upRender(){
+ const box=$("#upBox");
+ if(view.ui>=view.uq.length){box.innerHTML=`<div class="fb ${view.uscore>=9?"good":"info"}">You chose <b class="tally">${view.uscore}/${UPGRADE.length}</b> formal versions correctly.</div><div class="row"><button class="btn ghost" id="upAgain">Practise again</button></div>`;
+  if(view.uscore>=9)badge("upgrader");S.complete.ext2=true;extendCheck();
+  $("#upAgain").onclick=()=>{view.uq=shuffle(UPGRADE.map((_,i)=>i));view.ui=0;view.uscore=0;upRender()};return}
+ const u=UPGRADE[view.uq[view.ui]];const opts=shuffle([u.ok,...u.bad]);
+ box.innerHTML=`<p class="count">Phrase ${view.ui+1} of ${UPGRADE.length} · Score ${view.uscore}</p><p class="inf">${esc(u.inf)}</p>
+  <div class="choices">${opts.map(o=>`<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div><div id="upFb"></div>`;
+ box.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{
+  const ok=b.dataset.o===u.ok;box.querySelectorAll(".choice").forEach(x=>{x.disabled=true;if(x.dataset.o===u.ok)x.classList.add("right")});
+  if(ok){view.uscore++;earn("up"+view.uq[view.ui],4)}else b.classList.add("wrong");
+  $("#upFb").innerHTML=`<div class="fb ${ok?"good":"bad"}">${ok?"Correct!":"The formal version is shown in green."}</div><div class="row" style="margin-top:10px"><button class="btn ghost" id="upNext">Next</button></div>`;
+  $("#upNext").onclick=()=>{view.ui++;upRender()};
+ });
+}
+function detRender(done){
+ $("#detBox").innerHTML=DETECT.map((d,i)=>{let c="";if(done){const f=view.flags.has(i);c=d.err?(f?"hit":"miss"):(f?"false":"")}else if(view.flags.has(i))c="flag";
+  return `<button class="line ${c}" data-i="${i}" ${done?"disabled":""}>${esc(d.t)}${done&&(d.err||view.flags.has(i))?`<span class="why">${esc(d.why)}</span>`:""}</button>`}).join("");
+ if(!done)$("#detBox").querySelectorAll(".line").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;view.flags.has(i)?view.flags.delete(i):view.flags.add(i);$("#detCount").textContent=view.flags.size+" lines flagged";detRender()});
+}
+function detCheck(){
+ const errs=DETECT.map((d,i)=>d.err?i:-1).filter(i=>i>=0);
+ const hit=errs.filter(i=>view.flags.has(i)).length;const fal=[...view.flags].filter(i=>!DETECT[i].err).length;
+ detRender(true);$("#detCheck").disabled=true;earn("detect",Math.max(0,hit*4-fal*2));
+ $("#detFb").innerHTML=`<div class="fb ${hit>=5&&fal<=1?"good":"info"}">You found <b>${hit} of ${errs.length}</b> mistakes${fal?` and flagged ${fal} correct line${fal>1?"s":""}`:""}. Green = found, dashed = missed, red = this line was correct.</div>
+  <div class="mail"><div class="mail-bar"><i></i><i></i><i></i><span>Corrected email</span></div><div class="mail-body preview">${esc(DETECT_FIX)}</div></div>
+  <div class="row"><button class="btn ghost" id="detAgain">Try again</button></div>`;
+ $("#detAgain").onclick=()=>{view.flags=new Set();$("#detCheck").disabled=false;$("#detFb").innerHTML="";$("#detCount").textContent="0 lines flagged";detRender()};
+ if(hit>=5&&fal<=1)badge("detective");S.complete.ext3=true;extendCheck();
+}
+function scenRender(){
+ $("#scenBox").innerHTML=SCENARIOS.map(s=>`<button class="${view.scen===s.id?"on":""}" data-s="${s.id}"><b>${esc(s.title)}</b><small>To: ${esc(s.to.split(" (")[0])}</small>${S.builder[s.id]?`<span class="done-tag">Written · ${S.builder[s.id].score}/12</span>`:""}</button>`).join("");
+ $("#scenBox").querySelectorAll("button").forEach(b=>b.onclick=()=>{view.scen=b.dataset.s;scenRender();builderRender()});
+}
+function builderRender(){
+ const s=SCENARIOS.find(x=>x.id===view.scen);const prev=S.builder[s.id]||{};
+ if(!view.subjOrder||view.subjFor!==s.id){view.subjOrder=shuffle([0,1,2]);view.grOrder=shuffle([0,1,2]);view.subjFor=s.id}
+ const sigDefault=prev.signature||(S.name?S.name+"\nLSC 1103 Student, HCT Abu Dhabi":"");
+ $("#builder").innerHTML=`
+  <div class="task"><b>Your task:</b> ${esc(s.task)}<br><span class="small muted">Try to use these words: ${s.words.map(w=>`<b>${w}</b>`).join(", ")}</span></div>
+  <div class="compose">
+   <div class="crow"><span>To</span><input type="text" value="${esc(s.to)}" readonly aria-label="To"></div>
+   <div class="crow"><span>Subject</span><select id="bSubj" aria-label="Subject line"><option value="">Choose a subject line…</option>${view.subjOrder.map(i=>`<option value="${i}" ${prev.subj===i?"selected":""}>${esc(s.subjects[i])}</option>`).join("")}</select></div>
+   <div class="cbody">
+    <select id="bGreet" aria-label="Greeting"><option value="">Choose a greeting…</option>${view.grOrder.map(i=>`<option value="${i}" ${prev.greet===i?"selected":""}>${esc(s.greetings[i])}</option>`).join("")}</select>
+    <div><div class="colhead">Tap a phrase to add it</div><div class="phrasechips">${["I hope you are doing well. ","I am writing regarding ","Could you please ","I would appreciate it if you could ","I have attached ","I apologize for any inconvenience. ","Would it be possible to "].map(p=>`<button class="pchip" data-p="${esc(p)}">${esc(p.trim())}</button>`).join("")}</div></div>
+    <textarea id="bBody" aria-label="Email body" placeholder="Write the opening and body of your email here (40–120 words)…">${esc(prev.body||"")}</textarea>
+    <div class="row" style="justify-content:space-between"><span class="wc" id="bWc">0 words</span><div class="phrasechips" id="bVocab"></div></div>
+    <select id="bClose" aria-label="Closing line"><option value="">Choose a closing line…</option>${CLOSINGS.map((c,i)=>`<option value="${i}" ${prev.close===i?"selected":""}>${esc(c)}</option>`).join("")}</select>
+    <select id="bSign" aria-label="Sign-off"><option value="">Choose a sign-off…</option>${SIGNOFFS.map((c,i)=>`<option value="${i}" ${prev.sign===i?"selected":""}>${esc(c)}</option>`).join("")}</select>
+    <textarea id="bSig" aria-label="Signature" style="min-height:64px" placeholder="Your full name&#10;Course / Student ID">${esc(sigDefault)}</textarea>
+   </div>
+  </div>
+  <div class="two">
+   <div><div class="colhead">Checklist <span id="bScore" class="tally"></span></div><ul class="checks" id="bChecks"></ul></div>
+   <div style="display:flex;flex-direction:column;gap:10px;min-width:0"><div class="colhead">Preview</div><div class="mail"><div class="mail-bar"><i></i><i></i><i></i><span id="pvSubj">(no subject)</span></div><div class="mail-body preview" id="pvBody"></div></div>
+    <div class="row"><button class="btn" id="bSend">Send for marking</button><button class="btn ghost" id="bCopy">Copy email</button></div><div id="bFb"></div></div>
+  </div>`;
+ const ta=$("#bBody");
+ $("#builder").querySelectorAll(".pchip[data-p]").forEach(b=>b.onclick=()=>{ta.focus();ta.setRangeText(b.dataset.p,ta.selectionStart,ta.selectionEnd,"end");builderEval()});
+ ["bSubj","bGreet","bBody","bClose","bSign","bSig"].forEach(id=>{$("#"+id).addEventListener("input",builderEval)});
+ $("#bSend").onclick=builderSend;
+ $("#bCopy").onclick=()=>{const t=builderText();navigator.clipboard.writeText(t).then(()=>toast("Email copied.")).catch(()=>{const r=document.createRange();r.selectNodeContents($("#pvBody"));const sel=getSelection();sel.removeAllRanges();sel.addRange(r);toast("Press Ctrl+C to copy.")})};
+ builderEval();
+}
+const TEXTSPEAK=/\b(u|ur|r|pls|plz|thx|thanx|tmrw|tmr|coz|cuz|gonna|wanna|lol|btw|idk|msg|ya|cya|ok)\b/i;
+const CONTR=/\b\w+(n't|'m|'re|'ll|'ve|'d)\b|\b(cant|dont|wont|im|ive|didnt|isnt|doesnt)\b/i;
+const CAPS_OK=new Set(["HCT","LSC","GED","UAE","IELTS","PDF","CEO","HR","PM","AM","ID","CV","CBL","ADNOC","ADEK"]);
+function bv(){const s=SCENARIOS.find(x=>x.id===view.scen);const g=id=>$("#"+id).value;
+ return {s,subj:g("bSubj")===""?null:+g("bSubj"),greet:g("bGreet")===""?null:+g("bGreet"),body:g("bBody"),close:g("bClose")===""?null:+g("bClose"),sign:g("bSign")===""?null:+g("bSign"),sig:g("bSig")}}
+function builderText(){const v=bv();return `Subject: ${v.subj!==null?v.s.subjects[v.subj]:""}\n\n${v.greet!==null?v.s.greetings[v.greet]:""}\n\n${v.body.trim()}\n\n${v.close!==null?CLOSINGS[v.close]:""}\n\n${v.sign!==null?SIGNOFFS[v.sign]:""}\n${v.sig.trim()}`}
+function builderEval(){
+ const v=bv();const all=[v.body,v.close!==null?CLOSINGS[v.close]:"",v.sig].join(" ");
+ const words=v.body.trim()?v.body.trim().split(/\s+/).length:0;
+ const used=VOCAB.filter(w=>w.re.test(v.body));
+ const capsBad=(all.match(/\b[A-Z]{3,}\b/g)||[]).filter(w=>!CAPS_OK.has(w));
+ const sentStartBad=/(^|[.!?]\s+)[a-z]/.test(v.body.trim())||/\bi\b/.test(v.body);
+ const C=[
+  {ok:v.subj===v.s.cs,t:"Clear subject line",tip:"Choose the subject line that says what the email is about, with no capitals or emojis."},
+  {ok:v.greet===v.s.cg,t:"Formal greeting",tip:"Dear + title + family name (or Dear Sir or Madam)."},
+  {ok:words>=40&&words<=120,t:"Body is 40–120 words",tip:words<40?"Add more detail: what happened and what you need.":"Make it shorter. Be concise."},
+  {ok:/could you|would you|would it be possible|i would appreciate|please/i.test(v.body),t:"A polite request",tip:"Use Could you please …? or I would appreciate it if …"},
+  {ok:used.length>=2,t:"Uses 2 or more email words from the lesson",tip:"Try "+v.s.words.slice(0,3).join(", ")+"."},
+  {ok:!/\p{Extended_Pictographic}/u.test(all),t:"No emojis",tip:"Remove all emojis."},
+  {ok:capsBad.length===0,t:"No ALL CAPS words",tip:capsBad.length?"Change: "+capsBad.slice(0,3).join(", "):""},
+  {ok:!TEXTSPEAK.test(all),t:"No text-speak (u, pls, thx…)",tip:"Write full words: you, please, thank you."},
+  {ok:!CONTR.test(v.body),t:"No contractions (I'm, can't…)",tip:"Write I am, cannot, I will."},
+  {ok:words>0&&!sentStartBad,t:"Capital letters at the start of sentences and for I",tip:"Check every sentence starts with a capital, and write I, not i."},
+  {ok:v.close!==null&&v.close!==BAD_CLOSING&&v.sign!==null&&!BAD_SIGNOFFS.includes(v.sign),t:"Polite closing line and formal sign-off",tip:"Choose a formal closing line and Best regards, Kind regards or Sincerely."},
+  {ok:v.sig.trim().split(/\s+/).length>=2&&/[A-Z]/.test(v.sig),t:"Signature with your full name",tip:"Write your first and family name, then your course."}
+ ];
+ view.checks=C;const score=C.filter(c=>c.ok).length;view.bscore=score;
+ $("#bChecks").innerHTML=C.map(c=>`<li class="${c.ok?"ok":"no"}"><span class="m">${c.ok?"✓":"!"}</span><span>${c.t}${c.ok?"":`<span class="tip">${esc(c.tip)}</span>`}</span></li>`).join("");
+ $("#bScore").textContent="· "+score+"/12";
+ $("#bWc").textContent=words+" words";
+ $("#bVocab").innerHTML=v.s.words.map(w=>{const vv=VOCAB.find(x=>x.key===w);return `<span class="pchip vocab ${vv&&vv.re.test(v.body)?"used":""}">${w}</span>`}).join("");
+ $("#pvSubj").textContent=v.subj!==null?v.s.subjects[v.subj]:"(no subject)";
+ $("#pvBody").textContent=builderText().split("\n\n").slice(1).join("\n\n");
+}
+function builderSend(){
+ const v=bv();const sc=view.bscore;
+ S.builder[v.s.id]={scenario:v.s.title,subj:v.subj,greet:v.greet,body:v.body,close:v.close,sign:v.sign,signature:v.sig,score:sc,email:builderText(),checked:new Date().toISOString()};
+ earn("build_"+v.s.id,sc*2);
+ const missing=view.checks.filter(c=>!c.ok);
+ $("#bFb").innerHTML=`<div class="fb ${sc>=10?"good":"info"}"><span class="scorebig">${sc}/12</span><br>${sc>=10?"Well done! This email is ready to send.":"Fix the red points in the checklist and send again."}${missing.length&&sc>=10?" Small fix: "+missing.map(c=>c.t.toLowerCase()).join(", ")+".":""}</div>`;
+ if(sc>=10){badge("author");S.complete.ext4=true;extendCheck()}
+ scenRender();
+}
+function extendCheck(){if(S.complete.ext1&&S.complete.ext2&&S.complete.ext3&&S.complete.ext4&&!$("#extNext").innerHTML){complete("extend");$("#extNext").innerHTML=nextBtn("write","Next folder: Write");bindGo($("#extNext"))}}
+
+/* ---------- WRITE (final email tasks) ---------- */
+function finalCount(min){return Object.values(S.final).filter(f=>f.score>=(min||0)).length}
+function rWrite(m){
+ view.ft=view.ft||null;
+ m.innerHTML=card('<span>Write · Final email tasks</span>',"Write your own emails",`
+   <p class="lead">Choose a task and write the <b>whole</b> email yourself: subject, greeting, body, closing, sign-off and your name. Write 80–150 words. When you submit, you can compare your email with a sample answer.</p>
+   <div class="fb info">Write at least <b>2</b> emails to unlock your certificate. Write 3 emails that score 9/12 or more to earn the <b>Ready to Send</b> badge.</div>
+   <div class="scen" id="ftBox"></div><div id="ftWork"></div>`)+`<div id="wrNext"></div>`;
+ ftTiles();if(view.ft)ftRender();wrCheck();
+}
+function ftTiles(){
+ $("#ftBox").innerHTML=FINAL.map(t=>`<button class="${view.ft===t.id?"on":""}" data-t="${t.id}"><b>${esc(t.title)}</b><small>To: ${esc(t.to.split(" (")[0])}</small>${S.final[t.id]?`<span class="done-tag">Submitted · ${S.final[t.id].score}/12</span>`:""}</button>`).join("");
+ $("#ftBox").querySelectorAll("button").forEach(b=>b.onclick=()=>{view.ft=b.dataset.t;ftTiles();ftRender();$("#ftWork").scrollIntoView({behavior:"smooth",block:"start"})});
+}
+function ftRender(){
+ const t=FINAL.find(x=>x.id===view.ft);const prev=S.final[t.id]||{};const ticks=prev.ticks||[];
+ $("#ftWork").innerHTML=`
+  <div class="task"><b>Situation:</b> ${esc(t.situation)}</div>
+  <div class="two">
+   <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+    <div class="compose">
+     <div class="crow"><span>To</span><input type="text" value="${esc(t.to)}" readonly aria-label="To"></div>
+     <div class="crow"><span>Subject</span><input type="text" id="fSubj" value="${esc(prev.subject||"")}" placeholder="Write a clear subject line" aria-label="Subject line"></div>
+     <div class="cbody"><textarea id="fBody" style="min-height:300px" aria-label="Your email" placeholder="Dear …,&#10;&#10;I hope you are doing well. I am writing …&#10;&#10;…&#10;&#10;Thank you for …&#10;&#10;Kind regards,&#10;Your full name">${esc(prev.body||"")}</textarea>
+      <div class="row" style="justify-content:space-between"><span class="wc" id="fWc">0 words</span><span class="wc">Target: 80–150 words</span></div></div>
+    </div>
+    <div><div class="colhead">Content: tick each point you included</div><ul class="include" id="fInc">${t.include.map((p,i)=>`<li><label><input type="checkbox" data-i="${i}" ${ticks.includes(i)?"checked":""}> ${esc(p)}</label></li>`).join("")}</ul></div>
+   </div>
+   <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+    <div class="colhead">Language checklist <span class="tally" id="fScore"></span></div><ul class="checks" id="fChecks"></ul>
+    <div class="row"><button class="btn" id="fSubmit">Submit my email</button><button class="btn ghost" id="fSample" ${prev.score!==undefined?"":"disabled"}>Show sample answer</button></div>
+    <div id="fFb"></div>
+   </div>
+  </div><div id="fSampleBox"></div>`;
+ ["fSubj","fBody"].forEach(id=>$("#"+id).addEventListener("input",ftEval));
+ $("#fSubmit").onclick=ftSubmit;$("#fSample").onclick=ftSample;
+ ftEval();
+}
+function ftEval(){
+ const t=FINAL.find(x=>x.id===view.ft);const subj=$("#fSubj").value.trim();const body=$("#fBody").value;
+ const lines=body.split("\n").map(l=>l.trim()).filter(Boolean);
+ const words=body.trim()?body.trim().split(/\s+/).length:0;
+ const all=subj+" "+body;
+ const used=VOCAB.filter(w=>w.re.test(body));
+ const capsBad=(all.match(/\b[A-Z]{3,}\b/g)||[]).filter(w=>!CAPS_OK.has(w));
+ const signIdx=lines.findIndex(l=>/^(best regards|kind regards|regards|sincerely|yours sincerely|yours faithfully|best wishes)\s*,?$/i.test(l));
+ const nameLine=signIdx>=0?lines[signIdx+1]||"":"";
+ const paras=body.trim().split(/\n\s*\n/).filter(p=>p.trim()).length;
+ const sentStartBad=/(^|[.!?]\s+)[a-z]/.test(body.trim())||/\bi\b/.test(body);
+ const C=[
+  {ok:subj.split(/\s+/).filter(Boolean).length>=3&&!/\b[A-Z]{4,}\b/.test(subj.replace(/\b(LSC|HCT|IELTS|ADNOC)\b/g,""))&&!/!/.test(subj),t:"Clear subject line (3+ words, no CAPS or !)",tip:"Example: Request to reschedule my presentation"},
+  {ok:/^dear\s+\S+/i.test(lines[0]||"")&&/,$/.test(lines[0]||""),t:"Formal greeting with a comma",tip:"Start with Dear Ms. …, / Dear Sir or Madam,"},
+  {ok:/i am writing|i hope you are|i would like to|my name is/i.test(body),t:"Opening line that gives the reason",tip:"Try: I am writing regarding …"},
+  {ok:/could you|would you|would it be possible|i would appreciate|please/i.test(body),t:"A polite request",tip:"Use Could you please …? or I would appreciate it if …"},
+  {ok:used.length>=2,t:"2 or more email words from the lesson"+(used.length?" ("+used.map(u=>u.key).join(", ")+")":""),tip:"Try regarding, apologize, attachment, confirm, available …"},
+  {ok:words>=80&&words<=150,t:"80–150 words",tip:words<80?"Add more detail.":"Make it shorter and more concise."},
+  {ok:paras>=4,t:"Short paragraphs (leave an empty line between them)",tip:"Greeting / opening / body / closing / sign-off on separate lines."},
+  {ok:!/\p{Extended_Pictographic}/u.test(all)&&capsBad.length===0,t:"No emojis and no ALL CAPS words",tip:capsBad.length?"Change: "+capsBad.slice(0,3).join(", "):"Remove emojis."},
+  {ok:!TEXTSPEAK.test(all)&&!CONTR.test(body),t:"No text-speak or contractions",tip:"Write you, please, I am, cannot, I will."},
+  {ok:words>0&&!sentStartBad,t:"Capital letters at the start of sentences and for I",tip:"Check each sentence starts with a capital, and write I, not i."},
+  {ok:/look forward|thank you|let me know|for your (help|time|understanding)/i.test(body),t:"Polite closing line",tip:"Thank you for your help. / I look forward to hearing from you."},
+  {ok:signIdx>=0&&nameLine.split(/\s+/).length>=2,t:"Formal sign-off and your full name",tip:"Kind regards, then your first and family name on the next line."}
+ ];
+ view.fchecks=C;view.fscore=C.filter(c=>c.ok).length;
+ $("#fChecks").innerHTML=C.map(c=>`<li class="${c.ok?"ok":"no"}"><span class="m">${c.ok?"✓":"!"}</span><span>${esc(c.t)}${c.ok?"":`<span class="tip">${esc(c.tip)}</span>`}</span></li>`).join("");
+ $("#fScore").textContent="· "+view.fscore+"/12";$("#fWc").textContent=words+" words";
+}
+function ftSubmit(){
+ const t=FINAL.find(x=>x.id===view.ft);const words=$("#fBody").value.trim().split(/\s+/).filter(Boolean).length;
+ if(words<30){toast("Write more before you submit (at least 30 words).");return}
+ const ticks=[...$("#fInc").querySelectorAll("input:checked")].map(x=>+x.dataset.i);
+ S.final[t.id]={task:t.title,to:t.to,situation:t.situation,subject:$("#fSubj").value.trim(),body:$("#fBody").value,score:view.fscore,ticks,content:t.include.map((p,i)=>({point:p,included:ticks.includes(i)})),checks:view.fchecks.map(c=>({check:c.t,ok:c.ok})),date:new Date().toISOString()};
+ earn("final_"+t.id,view.fscore*3);
+ const miss=t.include.length-ticks.length;
+ $("#fFb").innerHTML=`<div class="fb ${view.fscore>=9?"good":"info"}"><span class="scorebig">${view.fscore}/12</span><br>${view.fscore>=9?"Well done! Your email is clear and professional.":"Good effort. Fix the red points and submit again."}${miss?` You have not ticked ${miss} content point${miss>1?"s":""}. Check that your email includes ${miss>1?"them":"it"}.`:""} Now compare your email with the sample answer.</div>`;
+ $("#fSample").disabled=false;ftTiles();
+ if(finalCount(9)>=3)badge("ready");
+ wrCheck();
+ if(certOK()&&!S.earned.certToast){S.earned.certToast=1;toast("Certificate unlocked! Open the Evaluate folder.",3500)}
+}
+function ftSample(){
+ const t=FINAL.find(x=>x.id===view.ft);
+ let html=esc(t.sample);VOCAB.forEach(v=>{html=html.replace(new RegExp("\\b("+v.re.source.replace(/\\b/g,"")+"\\w*)","gi"),"<b>$1</b>")});
+ $("#fSampleBox").innerHTML=`<div class="sample"><div class="sh">Sample answer</div><div class="sb">${html}</div></div>
+  <p class="small muted">Words from the lesson are in colour. Compare: Did you use a clear subject line? Did you include every content point? Is each part in its own paragraph? Your email does not need to be the same, so use your own ideas.</p>`;
+ $("#fSampleBox").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function wrCheck(){if(finalCount()>=2){complete("write");const n=$("#wrNext");if(n&&!n.innerHTML){n.innerHTML=nextBtn("evaluate","Next folder: Evaluate");bindGo(n)}}}
+
+/* ---------- EVALUATE ---------- */
+function certOK(){return !!(S.quiz&&S.quiz.pct>=80&&finalCount()>=2)}
+function rEvaluate(m){
+ m.innerHTML=card(meta("Evaluate",1,2),"Final quiz",`<div id="quiz"></div>`)
+ +card(meta("Evaluate",2,2),"Reflection",`
+  <div class="reflect">
+   <div><b>1. How confident are you writing a professional email now?</b><div class="scale" id="conf">${[1,2,3,4,5].map(n=>`<button data-n="${n}" class="${S.reflection.conf===n?"on":""}" aria-label="${n} out of 5">${n}</button>`).join("")}</div><span class="small muted">1 = not confident · 5 = very confident</span></div>
+   <div class="field" style="max-width:none"><label for="rWord">2. Which new email word will you use most? Write a sentence with it.</label><input type="text" id="rWord" value="${esc(S.reflection.word)}"></div>
+   <div class="field" style="max-width:none"><label for="rChange">3. What is one thing you will change in your emails from now on?</label><input type="text" id="rChange" value="${esc(S.reflection.change)}"></div>
+   <div class="row"><button class="btn" data-go="portfolio">Open My Portfolio (print / PDF)</button><button class="btn ghost" id="dlRes">Download results file</button></div>
+  </div>`)
+ +`<div id="certBox"></div>`;
+ bindGo(m);
+ $("#conf").querySelectorAll("button").forEach(b=>b.onclick=()=>{S.reflection.conf=+b.dataset.n;$("#conf").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b))});
+ $("#rWord").oninput=e=>S.reflection.word=e.target.value;$("#rChange").oninput=e=>S.reflection.change=e.target.value;
+ $("#dlRes").onclick=()=>download("results");
+ if(S.quiz&&S.quiz.done)quizResult();else quizIntro();
+ certBox();
+}
+function quizIntro(){
+ $("#quiz").innerHTML=`<p class="lead">12 questions about real email situations. The questions come in a different order each time. Score 80% or more (10/12) for your certificate.</p><div class="row"><button class="btn" id="qStart">Start the quiz</button></div>`;
+ $("#qStart").onclick=()=>{view.qs=shuffle(QUIZ.map((q,i)=>({i,opts:shuffle(q.o)})));view.qi=0;view.qok=0;view.qans=[];qRender()};
+}
+function qRender(){
+ const box=$("#quiz");const it=view.qs[view.qi];const q=QUIZ[it.i];
+ box.innerHTML=`<div class="qwrap"><div class="qtop"><span class="count">Question ${view.qi+1} of ${QUIZ.length}</span><span class="count">Correct: ${view.qok}</span></div>
+  <div class="progress"><i style="width:${view.qi/QUIZ.length*100}%"></i></div>
+  <p class="qtext">${esc(q.q)}</p><div class="choices">${it.opts.map(o=>`<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div><div id="qFb"></div></div>`;
+ box.querySelectorAll(".choice").forEach(b=>b.onclick=()=>{
+  const ok=b.dataset.o===q.o[0];box.querySelectorAll(".choice").forEach(x=>{x.disabled=true;if(x.dataset.o===q.o[0])x.classList.add("right")});
+  if(ok)view.qok++;else b.classList.add("wrong");view.qans.push({q:q.q,chosen:b.dataset.o,correct:q.o[0],ok});
+  $("#qFb").innerHTML=`<div class="fb ${ok?"good":"bad"}">${ok?"Correct! ":"Not quite. "}${esc(q.why)}</div><div class="row" style="margin-top:10px"><button class="btn" id="qNext">${view.qi+1<QUIZ.length?"Next question":"See my result"}</button></div>`;
+  $("#qNext").onclick=()=>{view.qi++;if(view.qi<QUIZ.length)qRender();else qFinish()};$("#qNext").focus();
+ });
+}
+function qFinish(){
+ const pct=Math.round(view.qok/QUIZ.length*100);const best=S.quiz&&S.quiz.pct>pct?S.quiz:null;
+ S.quiz=best||{done:true,score:view.qok,total:QUIZ.length,pct,answers:view.qans,date:new Date().toISOString()};
+ earn("quiz",view.qok*5);if(pct>=80){badge("pro");complete("evaluate")}
+ quizResult(pct);certBox();
+}
+function quizResult(last){
+ const q=S.quiz;const pct=last!==undefined?last:q.pct;const C=2*Math.PI*58;
+ const pass=pct>=80;
+ $("#quiz").innerHTML=`<div class="result"><svg class="ring" viewBox="0 0 140 140"><circle cx="70" cy="70" r="58" stroke="var(--surface-2)" stroke-width="12" fill="none"/><circle cx="70" cy="70" r="58" stroke="${pass?"var(--moss)":"var(--berry)"}" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="${C*pct/100} ${C}" transform="rotate(-90 70 70)"/><text x="70" y="78" text-anchor="middle" font-size="28" font-weight="800" fill="var(--ink)" font-family="sans-serif">${pct}%</text></svg>
+  <h3>${pass?"Congratulations, "+esc(firstName())+"! You passed the quiz.":"Almost there, "+esc(firstName())+"."}</h3>
+  <p class="muted">${pass?(finalCount()>=2?"Your certificate is below.":"Now write at least 2 emails in the Write folder to unlock your certificate."):"You need 80% for the certificate. Review the Explain folder and try again."}${q.pct!==pct?" Your best score is "+q.pct+"%.":""}</p>
+  <div class="row" style="justify-content:center"><button class="btn ghost" id="qRetry">Take the quiz again</button>${pass&&finalCount()<2?'<button class="btn" data-go="write">Go to Write</button>':""}</div></div>`;
+ bindGo($("#quiz"));
+ $("#qRetry").onclick=()=>{view.qs=shuffle(QUIZ.map((q,i)=>({i,opts:shuffle(q.o)})));view.qi=0;view.qok=0;view.qans=[];qRender()};
+}
+function stampsHTML(all){return `<div class="stamps">${BADGES.filter(b=>all||S.badges.includes(b.id)).map(b=>`<div class="stamp ${S.badges.includes(b.id)?"":"locked"}" title="${esc(b.how)}"><div class="inner"><svg viewBox="0 0 32 32">${b.ic}</svg><b>${b.name}</b>${all?`<span class="small muted" style="font-size:.66rem;line-height:1.2">${b.how}</span>`:""}</div></div>`).join("")}</div>`}
+function certHTML(){
+ const d=new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
+ return `<section class="cert">
+  <span class="eyebrow">Higher Colleges of Technology · LSC 1103 Professional Written Communication</span>
+  <h2>Certificate of Achievement</h2><p class="muted">This certifies that</p>
+  <div class="nm">${esc(S.name||"Student")}</div>
+  <p>has successfully completed <b>Send It Right: Professional Emails</b>,<br>writing <b>${finalCount()}</b> professional emails and scoring <b>${S.quiz.pct}%</b> in the final quiz,<br>with a total of <b class="tally">${S.points}</b> points.</p>
+  ${stampsHTML(false)}
+  <p class="small muted">${d}</p>
+ </section>`;
+}
+function certBox(){
+ const box=$("#certBox");if(!box)return;
+ if(!certOK()){const needQ=!(S.quiz&&S.quiz.pct>=80),needW=finalCount()<2;
+  box.innerHTML=card('<span><b>Certificate</b></span>',"Your certificate is locked",`<ul class="checks">
+   <li class="${needQ?"no":"ok"}"><span class="m">${needQ?"!":"✓"}</span><span>Score 80% or more in the final quiz${S.quiz?" (best so far: "+S.quiz.pct+"%)":""}</span></li>
+   <li class="${needW?"no":"ok"}"><span class="m">${needW?"!":"✓"}</span><span>Write at least 2 emails in the Write folder (done: ${finalCount()})</span></li></ul>`);return}
+ box.innerHTML=`<div id="certWrap">${certHTML()}</div><div class="row noprint" style="justify-content:center"><button class="btn" id="printCert">Print / save certificate as PDF</button><button class="btn ghost" data-go="portfolio">My Portfolio</button></div>`;
+ bindGo(box);
+ $("#printCert").onclick=()=>printTarget($("#certWrap"));
+}
+
+/* ---------- PORTFOLIO (printable answers) ---------- */
+function printTarget(el){
+ if(embedded)toast("Printing works when the app is opened on its own page (GitHub Pages).",4000);
+ let top=el;while(top.parentElement&&top.parentElement.id!=="main")top=top.parentElement;el=top;
+ document.body.classList.add("printing");el.classList.add("print-target");
+ const done=()=>{document.body.classList.remove("printing");el.classList.remove("print-target");window.removeEventListener("afterprint",done)};
+ window.addEventListener("afterprint",done);
+ try{window.print()}catch(e){}
+ setTimeout(()=>{if(embedded)done()},500);
+}
+function checksLine(list){return `<div class="rep-checks">${list.map(c=>`<span class="${c.ok?"y":"n"}">${c.ok?"✓":"✗"} ${esc(c.check)}</span>`).join("")}</div>`}
+function rPortfolio(m){
+ const d=new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
+ const fin=FINAL.filter(t=>S.final[t.id]).map(t=>S.final[t.id]);
+ const bld=SCENARIOS.filter(s=>S.builder[s.id]).map(s=>S.builder[s.id]);
+ const ref=S.reflection;
+ m.innerHTML=`<div class="row noprint" style="justify-content:space-between"><p class="lead" style="margin:0">All your answers on one page. Click the button, then choose <b>Save as PDF</b> as the printer.</p><button class="btn alt" id="printRep">Print / save as PDF</button></div>
+ <article class="report" id="report">
+  <header class="rep-head">
+   <div><span class="eyebrow">LSC 1103 · Professional Written Communication</span><h2>Send It Right · My Email Portfolio</h2></div>
+   <dl class="rep-meta"><dt>Name</dt><dd>${esc(S.name||"—")}</dd><dt>Date</dt><dd>${d}</dd><dt>Points</dt><dd>${S.points}</dd><dt>Badges</dt><dd>${S.badges.length} of ${BADGES.length}</dd><dt>Quiz</dt><dd>${S.quiz?S.quiz.score+"/"+S.quiz.total+" ("+S.quiz.pct+"%)":"Not taken"}</dd></dl>
+  </header>
+  <section class="rep-sec"><h3>1. Final writing tasks</h3>
+   ${fin.length?fin.map(f=>`<div class="rep-item"><h4><span>${esc(f.task)}</span><span>${f.score}/12</span></h4>
+    <p class="small muted"><b>To:</b> ${esc(f.to)} · <b>Task:</b> ${esc(f.situation)}</p>
+    <div class="rep-email"><b>Subject:</b> ${esc(f.subject)}\n\n${esc(f.body.trim())}</div>
+    ${checksLine(f.checks)}
+    <div class="rep-checks" style="margin-top:4px">${f.content.map(c=>`<span class="${c.included?"y":"n"}">${c.included?"✓":"✗"} ${esc(c.point)}</span>`).join("")}</div></div>`).join(""):`<p class="empty">No final emails yet. Go to the Write folder.</p>`}
+  </section>
+  <section class="rep-sec"><h3>2. Email Builder practice</h3>
+   ${bld.length?bld.map(b=>`<div class="rep-item"><h4><span>${esc(b.scenario)}</span><span>${b.score}/12</span></h4><div class="rep-email">${esc(b.email)}</div></div>`).join(""):`<p class="empty">No Email Builder emails yet. Go to the Extend folder.</p>`}
+  </section>
+  <section class="rep-sec"><h3>3. Final quiz</h3>
+   ${S.quiz?`<p><b>Score:</b> ${S.quiz.score}/${S.quiz.total} (${S.quiz.pct}%)</p><div class="scroll"><table class="qtable"><thead><tr><th>#</th><th>Question</th><th>My answer</th><th>Correct answer</th></tr></thead><tbody>${S.quiz.answers.map((a,i)=>`<tr><td>${i+1}</td><td>${esc(a.q)}</td><td style="color:var(--${a.ok?"good":"bad"})">${a.ok?"✓ ":"✗ "}${esc(a.chosen)}</td><td>${esc(a.correct)}</td></tr>`).join("")}</tbody></table></div>`:`<p class="empty">Quiz not taken yet.</p>`}
+  </section>
+  <section class="rep-sec"><h3>4. Reflection</h3>
+   <p><b>Confidence:</b> ${ref.conf?ref.conf+" / 5":"—"}</p>
+   <p><b>The word I will use most:</b> ${esc(ref.word||"—")}</p>
+   <p><b>One thing I will change:</b> ${esc(ref.change||"—")}</p>
+  </section>
+  <section class="rep-sec"><h3>5. Badges</h3>${S.badges.length?stampsHTML(false):'<p class="empty">No badges yet.</p>'}</section>
+  ${certOK()?`<div class="page-break">${certHTML()}</div>`:""}
+ </article>`;
+ $("#printRep").onclick=()=>printTarget($("#report"));
+}
+
+/* ---------- GLOSSARY ---------- */
+function rGlossary(m){
+ m.innerHTML=card('<span><b>Reference</b></span>',"Email glossary · English / عربي",`
+  <div class="field" style="max-width:340px"><label for="gSearch">Search</label><input type="text" id="gSearch" placeholder="Type a word or Arabic meaning"></div>
+  <div class="scroll"><table class="gtable"><thead><tr><th>Word</th><th>Meaning</th><th>Example</th><th style="text-align:right">عربي</th></tr></thead><tbody id="gBody"></tbody></table></div>`);
+ const draw=f=>{f=(f||"").toLowerCase();$("#gBody").innerHTML=VOCAB.filter(v=>!f||(v.w+v.def+v.ar).toLowerCase().includes(f)).map(v=>`<tr><td><span class="w">${esc(v.w)}</span><br><span class="small muted">${v.pos}</span></td><td>${esc(v.def)}</td><td class="small"><i>${hl(v.ex,v)}</i></td><td class="ar">${v.ar}</td></tr>`).join("")||'<tr><td colspan="4" class="muted">No words match.</td></tr>'};
+ draw();$("#gSearch").oninput=e=>draw(e.target.value);
+}
+
+/* ---------- save / load ---------- */
+function download(kind){
+ const data=Object.assign({},S,{savedAt:new Date().toISOString(),kind});
+ const nm=(S.name||"student").trim().replace(/\s+/g,"_").replace(/[^\w-]/g,"");
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+ const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`SendItRight_${kind}_${nm}.json`;document.body.appendChild(a);a.click();
+ setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+ toast(embedded?"Downloads work when the app is opened on its own page.":(kind==="results"?"Results downloaded.":"Progress saved to your Downloads."),3500);
+}
+$("#saveBtn").onclick=()=>download("progress");
+$("#loadBtn").onclick=()=>$("#loadFile").click();
+$("#loadFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(d.app!=="Send It Right")throw 0;S=Object.assign(fresh(),d);hud();toast("Welcome back, "+firstName()+"!");go(cur)}catch(err){toast("That file is not a Send It Right save file.")}};r.readAsText(f);e.target.value=""};
+$("#hudBadges").onclick=()=>{const d=document.createElement("div");d.className="modal";d.innerHTML=`<div class="box" role="dialog" aria-label="Your badges"><h3>Your badges · ${S.badges.length} of ${BADGES.length}</h3>${stampsHTML(true)}<div class="row"><button class="btn" id="mClose">Close</button></div></div>`;document.body.appendChild(d);d.onclick=e=>{if(e.target===d||e.target.id==="mClose")d.remove()}};
+
+/* ---------- confetti ---------- */
+function confetti(){
+ if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+ const c=$("#confetti"),x=c.getContext("2d");c.width=innerWidth;c.height=innerHeight;
+ const cs=getComputedStyle(document.documentElement);const cols=[cs.getPropertyValue("--moss").trim(),cs.getPropertyValue("--berry").trim(),"#f5b700","#3fa7d6"];
+ const P=Array.from({length:120},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.4,vx:(Math.random()-.5)*3,vy:2+Math.random()*3,r:Math.random()*6.28,s:5+Math.random()*6,c:cols[Math.floor(Math.random()*cols.length)]}));
+ let t=0;(function f(){x.clearRect(0,0,c.width,c.height);P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=.1;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);x.restore()});if(++t<170)requestAnimationFrame(f);else x.clearRect(0,0,c.width,c.height)})();
+}
+
+hud();go("start");
+})();
+</script>
+</body>
+</html>
